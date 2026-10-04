@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Total Data & ID — CSID.PRO</title>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: 'Inter', Arial, sans-serif; 
+      background: #000; 
+      color: #fff; 
+      padding: 15px; 
+      max-width: 720px; 
+      margin: 0 auto; 
+      min-height: 100vh;
+    }
+    h1 { text-align: center; margin: 15px 0; color: #f97316; font-size: 20px; }
+
+    .box { background: #111; padding: 18px; border-radius: 14px; margin-bottom: 15px; border: 1px solid #222; }
+    
+    input { 
+      width: 100%; padding: 12px 14px; font-size: 15px; border-radius: 10px; border: none; 
+      background: #1a1a1a; color: #fff; margin-bottom: 10px; outline: none; border: 2px solid transparent;
+    }
+    input:focus { border-color: #f97316; }
+    
+    .tombol-baris { display: flex; gap: 10px; margin: 10px 0; }
+    button { 
+      padding: 12px 16px; font-size: 15px; font-weight: bold; border-radius: 10px; border: none; 
+      background: #f97316; color: #fff; cursor: pointer; flex: 1; transition: all 0.2s;
+    }
+    button:active { transform: scale(0.97); }
+    .btn-refresh { background: #10b981; }
+    .btn-refresh:active { background: #0ea874; }
+
+    /* KARTU TOTAL */
+    .grid-total { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; }
+    .kartu { background: #1a1a1a; padding: 18px 12px; border-radius: 12px; text-align: center; }
+    .kartu.harian { border-top: 3px solid #f97316; }
+    .kartu.mingguan { border-top: 3px solid #3b82f6; }
+    .kartu.bulanan { border-top: 3px solid #a855f7; }
+    .angka { font-size: 30px; font-weight: bold; }
+    .kartu.harian .angka { color: #f97316; }
+    .kartu.mingguan .angka { color: #3b82f6; }
+    .kartu.bulanan .angka { color: #a855f7; }
+    .label { font-size: 12px; color: #888; margin-top: 6px; text-transform: uppercase; }
+
+    /* DAFTAR DATA */
+    .daftar { margin-top: 15px; max-height: 520px; overflow-y: auto; }
+    .item { 
+      padding: 15px; border-bottom: 1px solid #222; cursor: pointer; transition: background 0.2s;
+      font-size: 13px; line-height: 1.8;
+    }
+    .item:hover { background: #1a1a1a; }
+    .baris-id { color: #666; font-size: 11px; margin-bottom: 4px; word-break: break-all; }
+    .baris-nopol { font-weight: bold; color: #f97316; font-size: 15px; margin-bottom: 4px; word-break: break-all; }
+    .baris-nama { color: #fff; }
+    .baris-kode { color: #aaa; font-family: monospace; word-break: break-all; margin-top: 2px; }
+    .baris-waktu { color: #666; font-size: 11px; margin-top: 4px; }
+
+    /* MODAL RINCIAN */
+    .latar-modal { 
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999; 
+      display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal { 
+      background: #111; border-radius: 16px; padding: 22px; width: 100%; max-width: 540px; 
+      border: 1px solid #333; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-judul { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #f97316; display: flex; justify-content: space-between; align-items: center; }
+    .rincian { 
+      white-space: pre-wrap; font-family: 'JetBrains Mono', monospace; font-size: 14px; line-height: 2; 
+      word-break: break-all;
+    }
+    .kosong { color: #555; }
+    .btn-tutup { padding: 8px 12px; font-size: 13px; flex: none; width: auto; background: #ef4444; }
+
+    .info { color: #666; font-size: 11px; text-align: center; margin-top: 10px; }
+    .status { color: #10b981; font-size: 12px; margin-top: 8px; text-align: center; }
+    .muat { text-align: center; padding: 30px; color: #f97316; }
+  </style>
+</head>
+<body>
+
+  <h1>📊 TOTAL DATA + ID DOKUMEN</h1>
+
+  <div class="box">
+    <input type="text" id="kunciAkses" placeholder="Kunci Akses" value="Sinabang123">
+    <div class="tombol-baris">
+      <button class="btn-refresh" onclick="muatSemua()">🔄 REFRESH DATA</button>
+      <button onclick="tampilDaftar()">📋 LIHAT DAFTAR</button>
+    </div>
+    <div id="statusInfo" class="status">Tekan REFRESH untuk mulai</div>
+  </div>
+
+  <!-- TOTAL HARIAN • MINGGUAN • BULANAN -->
+  <div class="box">
+    <div class="grid-total">
+      <div class="kartu harian">
+        <div class="angka" id="totalHari">0</div>
+        <div class="label">HARI INI</div>
+      </div>
+      <div class="kartu mingguan">
+        <div class="angka" id="totalMinggu">0</div>
+        <div class="label">7 HARI TERAKHIR</div>
+      </div>
+      <div class="kartu bulanan">
+        <div class="angka" id="totalBulan">0</div>
+        <div class="label">BULAN INI</div>
+      </div>
+    </div>
+    <div class="grid-total" style="margin-top: 5px;">
+      <div class="kartu" style="border-top: 3px solid #fff;">
+        <div class="angka" style="color:#fff;" id="totalSemua">0</div>
+        <div class="label">SEMUA DATA</div>
+      </div>
+      <div class="kartu" style="border-top: 3px solid #10b981;">
+        <div class="angka" style="color:#10b981;" id="totalNopol">0</div>
+        <div class="label">ADA NOPOL</div>
+      </div>
+      <div class="kartu" style="border-top: 3px solid #6366f1;">
+        <div class="angka" style="color:#6366f1;" id="totalLengkap">0</div>
+        <div class="label">NOPOL+NOKA+NOSIN</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAFTAR DATA — TAMPIL ID DOKUMEN -->
+  <div class="box">
+    <input type="text" id="kataKunci" placeholder="Cari: ID / Nopol / Noka / Nosin / Nama" 
+           style="display:none;" onkeydown="if(event.key==='Enter') tampilDaftar()">
+    <div id="daftarData" class="daftar">
+      <div class="muat">Tekan REFRESH untuk menampilkan data lengkap</div>
+    </div>
+  </div>
+
+  <p class="info">Kunci: Sinabang123 • ID Dokumen tampil di setiap baris • Klik untuk lihat rincian lengkap ✅</p>
+
+  <!-- MODAL RINCIAN -->
+  <div id="latarModal" class="latar-modal" onclick="if(event.target === this) tutupRincian()">
+    <div class="modal">
+      <div class="modal-judul">
+        <span id="modalJudul">RINCIAN LENGKAP</span>
+        <button class="btn-tutup" onclick="tutupRincian()">✕ Tutup</button>
+      </div>
+      <div id="isiRincian" class="rincian"></div>
+    </div>
+  </div>
+
+<script>
+// ==================================================
+// 🔑 FIREBASE DARI DATA KAMU
+// ==================================================
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSySyBonuHp4nd-YZKWV5IM_2HRCfJ2TQ4zJaY",
+  authDomain: "gen-lang-client-0221970857.firebaseapp.com",
+  databaseURL: "https://gen-lang-client-0221970857-default-rtdb.firebaseio.com",
+  projectId: "gen-lang-client-0221970857",
+  storageBucket: "gen-lang-client-0221970857.firebasestorage.app",
+  messagingSenderId: "483674298302",
+  appId: "1:483674298302:web:8c6ccf111af4de7bbecbef"
+};
+const KUNCI_AKSES = "Sinabang123";
+
+if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.firestore();
+
+// ==================================================
+// 🔧 FUNGSI BACA SEMUA NAMA KOLOM
+// ==================================================
+function ambil(item, daftar) {
+  for (const nama of daftar) {
+    const nilai = item[nama];
+    if (nilai !== undefined && nilai !== null && String(nilai).trim() !== "") {
+      return String(nilai).trim();
+    }
+  }
+  return null;
+}
+
+function tampil(item, daftar) {
+  const v = ambil(item, daftar);
+  return v || '<span class="kosong">-</span>';
+}
+
+// ==================================================
+// 📅 HITUNG RENTANG WAKTU
+// ==================================================
+function mulaiHariIni() {
+  const d = new Date(); d.setHours(0,0,0,0); return d;
+}
+function mulai7Hari() {
+  const d = new Date(); d.setDate(d.getDate()-6); d.setHours(0,0,0,0); return d;
+}
+function mulaiBulanIni() {
+  const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d;
+}
+function dalamRentang(ts, mulai) {
+  if (!ts) return false;
+  return new Date(ts.seconds*1000) >= mulai;
+}
+
+// ==================================================
+// 🔄 REFRESH SEMUA DATA
+// ==================================================
+async function muatSemua() {
+  if (document.getElementById('kunciAkses').value.trim() !== KUNCI_AKSES) {
+    alert("❌ Kunci akses salah!"); return;
+  }
+  const status = document.getElementById('statusInfo');
+  status.textContent = "⏳ Memuat data terbaru...";
+  status.style.color = "#f97316";
+
+  try {
+    const snap = await db.collection('pencarian').get();
+    
+    let hari=0, minggu=0, bulan=0, semua=0, adaNopol=0, lengkap=0;
+    const h = mulaiHariIni(), m7 = mulai7Hari(), b = mulaiBulanIni();
+
+    snap.forEach(dok => {
+      const d = dok.data();
+      semua++;
+
+      const nopol = ambil(d,['NopolServer','nopol','plat','NO_POL','NoPlat','no_plat','No.PLAT']);
+      const noka = ambil(d,['Noka','no_rangka','rangka','NoRangka','NomorRangka']);
+      const nosin = ambil(d,['Nosin','no_mesin','mesin','NoMesin','NomorMesin']);
+
+      if (nopol) adaNopol++;
+      if (nopol && noka && nosin) lengkap++;
+
+      if (d.waktu_ditemukan) {
+        if (dalamRentang(d.waktu_ditemukan, h)) hari++;
+        if (dalamRentang(d.waktu_ditemukan, m7)) minggu++;
+        if (dalamRentang(d.waktu_ditemukan, b)) bulan++;
+      }
+    });
+
+    document.getElementById('totalHari').textContent = hari;
+    document.getElementById('totalMinggu').textContent = minggu;
+    document.getElementById('totalBulan').textContent = bulan;
+    document.getElementById('totalSemua').textContent = semua;
+    document.getElementById('totalNopol').textContent = adaNopol;
+    document.getElementById('totalLengkap').textContent = lengkap;
+
+    status.textContent = `✅ Diperbarui: ${new Date().toLocaleString('id-ID')}`;
+    status.style.color = "#10b981";
+    tampilDaftar();
+
+  } catch (e) {
+    status.textContent = `⚠️ ${e.message}`;
+    status.style.color = "#ef4444";
+  }
+}
+
+// ==================================================
+// 📋 DAFTAR — TAMPIL ID DOKUMEN
+// ==================================================
+async function tampilDaftar() {
+  if (document.getElementById('kunciAkses').value.trim() !== KUNCI_AKSES) {
+    alert("❌ Kunci akses salah!"); return;
+  }
+  const kata = document.getElementById('kataKunci').value.trim().toUpperCase().replace(/\s+/g,'');
+  const el = document.getElementById('daftarData');
+  el.innerHTML = '<div class="muat">⏳ Menyusun daftar...</div>';
+  document.getElementById('kataKunci').style.display = "block";
+
+  try {
+    const snap = await db.collection('pencarian').orderBy('waktu_ditemukan','desc').get();
+    const hasil = [];
+
+    snap.forEach(dok => {
+      const d = dok.data();
+      if (!kata) {
+        hasil.push({id:dok.id, ...d});
+        return;
+      }
+      const teks = [
+        dok.id.toUpperCase(),
+        ambil(d,['NopolServer','nopol','plat']) || '',
+        ambil(d,['Nama','nama']) || '',
+        ambil(d,['Noka','no_rangka']) || '',
+        ambil(d,['Nosin','no_mesin']) || ''
+      ].join(' ').toUpperCase();
+      if (teks.includes(kata)) hasil.push({id:dok.id, ...d});
+    });
+
+    if (hasil.length === 0) {
+      el.innerHTML = '<div class="muat">❌ Data tidak ditemukan</div>'; return;
+    }
+
+    el.innerHTML = '';
+    hasil.forEach((d, idx) => {
+      const nopol = ambil(d,['NopolServer','nopol','plat','NO_POL','NoPlat','no_plat','No.PLAT']) || '-';
+      const nama = ambil(d,['Nama','nama','NamaPemilik']) || '-';
+      const noka = ambil(d,['Noka','no_rangka','rangka','NoRangka','NomorRangka']) || '-';
+      const nosin = ambil(d,['Nosin','no_mesin','mesin','NoMesin','NomorMesin']) || '-';
+      const waktu = d.waktu_ditemukan ? new Date(d.waktu_ditemukan.seconds*1000).toLocaleString('id-ID') : '-';
+
+      el.innerHTML += `
+        <div class="item" onclick="bukaRincian('${d.id}')">
+          <div class="baris-id">🆔 ID: ${d.id}</div>
+          <div class="baris-nopol">📌 NOPOL: ${nopol}</div>
+          <div class="baris-nama">👤 Pemilik: ${nama}</div>
+          <div class="baris-kode">🔩 NOKA: ${noka}</div>
+          <div class="baris-kode">⚙️ NOSIN: ${nosin}</div>
+          <div class="baris-waktu">🕐 ${waktu}</div>
+        </div>`;
+    });
+  } catch (e) {
+    el.innerHTML = `<div class="muat" style="color:#ef4444">⚠️ ${e.message}</div>`;
+  }
+}
+
+// ==================================================
+// 🔍 RINCIAN — TAMPIL ID LENGKAP
+// ==================================================
+async function bukaRincian(docId) {
+  try {
+    const dok = await db.collection('pencarian').doc(docId).get();
+    if (!dok.exists) return;
+    const d = dok.data();
+    const nopol = ambil(d,['NopolServer','nopol','plat','NO_POL','NoPlat','no_plat','No.PLAT']) || docId;
+
+    document.getElementById('modalJudul').textContent = nopol;
+    document.getElementById('isiRincian').innerHTML = `
+══════════════════════════════════════════
+           R I N C I A N   L E N G K A P
+══════════════════════════════════════════
+
+🆔 ID DOKUMEN:
+${docId}
+
+👤 IDENTITAS PEMILIK
+──────────────────────────────────────────
+NAMA     : ${tampil(d, ['Nama','nama','NamaPemilik','pemilik'])}
+NIK      : ${tampil(d, ['NIK','nik','NoKTP','ktp','no_ktp'])}
+ALAMAT   : ${tampil(d, ['Alamat','alamat','AlamatLengkap','alamat_lengkap'])}
+PEKERJAAN: ${tampil(d, ['Pekerjaan','pekerjaan','Kerja','pekerjaan'])}
+HP       : ${tampil(d, ['HP','MSSDN','no_hp','telepon','hp'])}
+
+🚗 DATA KENDARAAN
+──────────────────────────────────────────
+NO.PLAT  : ${tampil(d, ['NopolServer','nopol','plat','NO_POL','NoPlat','no_plat','No.PLAT'])}
+MEREK    : ${tampil(d, ['Merk','Merek','merk','merek'])}
+TIPE     : ${tampil(d, ['Tipe','tipe','Type','type','tipe_kendaraan'])}
+TAHUN    : ${tampil(d, ['Tahun','tahun','TahunPembuatan','tahun_pembuatan','tahun_kendaraan'])}
+WARNA    : ${tampil(d, ['Warna','warna','WarnaKendaraan','warna_kendaraan'])}
+CC       : ${tampil(d, ['CC','cc','Silinder','Kapasitas','kapasitas_cc','silinder'])}
+BAHAN BAKAR: ${tampil(d, ['BBM','BahanBakar','bahan_bakar','jenis_bbm','NamaBBM','bahanbakar'])}
+
+📄 NOMOR DOKUMEN — LENGKAP
+──────────────────────────────────────────
+NOKA / NO.RANGKA :
+${tampil(d, ['Noka','no_rangka','NoRangka','NomorRangka','rangka','no_rangka_kendaraan'])}
+
+NOSIN / NO.MESIN :
+${tampil(d, ['Nosin','no_mesin','NoMesin','NomorMesin','mesin','no_mesin_kendaraan'])}
+
+NO.BPKB : ${tampil(d, ['BPKB','bpkb','NoBPKB','nomor_bpkb','no_bpkb'])}
+NO.STNK : ${tampil(d, ['STNK','stnk','NoSTNK','nomor_stnk','no_stnk'])}
+
+🕐 INFORMASI PENYIMPANAN
+──────────────────────────────────────────
+DITEMUKAN PADA: ${d.waktu_ditemukan ? new Date(d.waktu_ditemukan.seconds*1000).toLocaleString('id-ID') : '-'}
+SUMBER        : ${tampil(d, ['sumber','Sumber'])}
+══════════════════════════════════════════`;
+
+    document.getElementById('latarModal').style.display = 'flex';
+  } catch (e) {
+    alert("⚠️ " + e.message);
+  }
+}
+
+function tutupRincian() {
+  document.getElementById('latarModal').style.display = 'none';
+}
+</script>
+</body>
+</html>
