@@ -3,173 +3,288 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DATABASE IP REAL-TIME</title>
+  <title>PUSAT KONTROL — DATABASE REAL-TIME</title>
+  
+  <!-- Firebase SDK v10 Compat -->
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body { 
-      font-family: 'Arial', sans-serif; 
-      background: #000; color: #fff; 
-      padding: 12px; max-width: 760px; margin: 0 auto; min-height: 100vh;
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+      background: #000000; color: #ffffff; 
+      padding: 12px; max-width: 800px; margin: 0 auto; min-height: 100vh;
+      overflow-x: hidden;
     }
 
     .db-putih { color: #ffffff; }
-    .ip-merah { color: #ff0000; }
+    .ip-merah { color: #ff2233; text-shadow: 0 0 15px rgba(255, 34, 51, 0.6); }
 
-    .layar-masuk { margin-top: 120px; text-align: center; }
-    .logo { font-size: 30px; font-weight: 900; margin-bottom: 5px; }
-    .sub { color: #888; font-size: 13px; margin-bottom: 30px; }
+    .layar-masuk { 
+      min-height: 80vh; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      text-align: center; 
+    }
+    .logo { font-size: 26px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 6px; }
+    .sub { color: #888888; font-size: 13px; margin-bottom: 24px; font-weight: 600; }
+    
     .kotak-masuk {
-      background: #111; padding: 25px; border-radius: 14px;
-      border: 1px solid #222; max-width: 380px; margin: 0 auto;
+      background: #0d0d0f; padding: 28px 24px; border-radius: 20px;
+      border: 1px solid rgba(255, 34, 51, 0.2); width: 100%; max-width: 380px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
     }
-    input {
-      width: 100%; padding: 14px; font-size: 15px; border-radius: 10px;
-      border: none; background: #1a1a1a; color: #fff;
-      margin-bottom: 15px; outline: none; border: 2px solid transparent;
+    
+    input[type="text"], input[type="password"] {
+      width: 100%; padding: 14px 16px; font-size: 18px; border-radius: 12px;
+      background: #141417; color: #ffffff;
+      margin-bottom: 16px; outline: none; border: 2px solid rgba(255,255,255,0.08);
+      text-align: center; font-family: 'JetBrains Mono', monospace; font-weight: 700;
+      transition: all 0.2s ease;
     }
-    input:focus { border-color: #ff0000; }
+    input:focus { border-color: #ff2233; box-shadow: 0 0 15px rgba(255,34,51,0.3); }
+    
     .btn {
-      width: 100%; padding: 14px; font-size: 16px; font-weight: bold;
-      border-radius: 10px; border: none; background: #ff0000;
-      color: #fff; cursor: pointer; transition: 0.2s;
+      width: 100%; padding: 14px; font-size: 16px; font-weight: 800;
+      border-radius: 12px; border: none; background: #ff2233;
+      color: #ffffff; cursor: pointer; transition: all 0.15s ease;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      box-shadow: 0 4px 20px rgba(255, 34, 51, 0.4);
     }
-    .btn:active { transform: scale(0.97); background: #cc0000; }
+    .btn:active { transform: scale(0.97); background: #e01122; }
 
-    .waktu-sistem {
-      background: #111; padding: 10px; border-radius: 10px; text-align: center;
-      margin-bottom: 10px; border: 1px solid #222;
+    .header-berhadapan {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(10, 10, 12, 0.9);
+      border-radius: 16px;
     }
-    .waktu-jam { font-size: 22px; font-weight: bold; color: #10b981; font-family: monospace; }
-    .waktu-tgl { font-size: 12px; color: #aaa; margin-top: 2px; }
+    .header-judul { font-size: 15px; font-weight: 900; letter-spacing: -0.3px; }
+    .header-waktu { text-align: right; }
+    .waktu-jam { font-size: 17px; font-weight: 800; color: #10b981; font-family: 'JetBrains Mono', monospace; line-height: 1.1; }
+    .waktu-tgl { font-size: 10px; color: #999999; margin-top: 2px; font-weight: 600; }
 
-    .notifikasi {
-      background: #1a2f1a; border: 1px solid #10b981; border-radius: 10px;
-      padding: 10px 14px; margin-bottom: 10px; display: none;
-      animation: kedip 1s infinite alternate;
+    .panel-kontrol-repo {
+      padding: 16px; border-radius: 16px; margin: 12px 0;
+      background: #0d0d10; border: 1px solid rgba(255,255,255,0.08);
     }
-    .notifikasi.aktif { display: block; }
-    @keyframes kedip {
-      from { box-shadow: 0 0 4px #10b981; }
-      to   { box-shadow: 0 0 12px #10b981; }
+    .judul-kontrol { 
+      font-weight: 800; font-size: 12px; margin-bottom: 12px; color: #ff2233; 
+      text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; justify-content: space-between;
     }
-    .notif-teks { color: #10b981; font-weight: bold; font-size: 14px; }
-    .notif-info { font-size: 11px; color: #999; margin-top: 2px; }
+    .baris-repo {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border-radius: 12px;
+      background: #141418; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05);
+      cursor: pointer; transition: all 0.2s ease;
+    }
+    .baris-repo:hover { background: #1c1c22; }
+    .nama-repo { font-size: 13px; font-weight: 700; color: #ffffff; }
+    .url-repo { font-size: 10px; color: #777777; margin-top: 2px; }
+    
+    .switch {
+      position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #2a2a30; transition: .2s; border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+      background-color: white; transition: .2s; border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #10b981; }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    .repo-mati { opacity: 0.35; filter: grayscale(100%); }
 
     .statistik {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;
     }
     .stat-kotak {
-      background: #111; padding: 10px 6px; border-radius: 10px; text-align: center;
-      border-top: 3px solid;
+      background: #0d0d10; padding: 12px 6px; border-radius: 14px; text-align: center;
+      border: 1px solid rgba(255,255,255,0.05);
     }
-    .stat-harian  { border-color: #10b981; }
-    .stat-mingguan{ border-color: #f59e0b; }
-    .stat-bulanan { border-color: #6366f1; }
-    .stat-tahunan { border-color: #ec4899; }
-    .stat-angka { font-size: 18px; font-weight: bold; }
-    .stat-harian  .stat-angka { color: #10b981; }
+    .stat-harian   { border-top: 3px solid #10b981; }
+    .stat-mingguan { border-top: 3px solid #f59e0b; }
+    .stat-bulanan  { border-top: 3px solid #6366f1; }
+    .stat-tahunan  { border-top: 3px solid #ec4899; }
+    .stat-angka { font-size: 20px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    .stat-harian .stat-angka   { color: #10b981; }
     .stat-mingguan .stat-angka { color: #f59e0b; }
-    .stat-bulanan .stat-angka { color: #6366f1; }
-    .stat-tahunan .stat-angka { color: #ec4899; }
-    .stat-label { font-size: 9px; color: #888; margin-top: 2px; }
+    .stat-bulanan .stat-angka  { color: #6366f1; }
+    .stat-tahunan .stat-angka  { color: #ec4899; }
+    .stat-label { font-size: 9px; color: #888888; font-weight: 700; margin-top: 2px; }
 
-    .menu { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
-    .tab-btn {
-      padding: 10px 6px; font-size: 12px; font-weight: bold;
-      border-radius: 10px; border: none; background: #222;
-      color: #fff; cursor: pointer; transition: 0.2s;
+    .kotak-pencarian-api { margin: 12px 0; }
+    .btn-cari-api {
+      width: 100%; padding: 14px; font-size: 15px; font-weight: 800;
+      border-radius: 12px; border: none; background: #f59e0b;
+      color: #000000; cursor: pointer; transition: 0.2s;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+      text-transform: uppercase;
     }
-    .tab-btn.aktif { background: #ff0000; }
-    .refresh {
-      background: #10b981; width: 100%; padding: 10px; font-size: 14px;
-      margin-bottom: 10px; border-radius: 10px; border: none; color: #fff; font-weight: bold; cursor: pointer;
-    }
-    .refresh:active { background: #0ea874; }
+    .btn-cari-api:active { transform: scale(0.97); }
 
-    .judul { text-align: center; font-size: 20px; font-weight: bold; margin: 8px 0; }
-    .status { text-align: center; font-size: 11px; margin: 4px 0 8px; color: #0f0; }
-    .status.salah { color: #f44; }
-    
     .tabel-header {
-      display: grid; grid-template-columns: 1fr 1fr 1fr 140px; gap: 4px;
-      padding: 8px 6px; font-weight: bold; font-size: 10px; color: #aaa;
-      border-bottom: 2px solid #333;
+      display: grid; grid-template-columns: 85px 1fr 1fr 80px 100px; gap: 4px;
+      padding: 10px 8px; font-weight: 800; font-size: 9px; color: #888888;
+      border-bottom: 2px solid #222226; text-transform: uppercase; letter-spacing: 0.5px;
     }
-    .daftar { max-height: 400px; overflow-y: auto; border: 1px solid #222; border-radius: 10px; }
+    .daftar { max-height: 380px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; background: #0a0a0c; }
     
     .baris {
-      display: grid; grid-template-columns: 1fr 1fr 1fr 140px; gap: 4px;
-      padding: 8px 6px; border-bottom: 1px solid #222;
-      font-size: 10px; align-items: center; cursor: pointer; transition: 0.2s;
+      display: grid; grid-template-columns: 85px 1fr 1fr 80px 100px; gap: 4px;
+      padding: 10px 8px; border-bottom: 1px solid #141418;
+      font-size: 10px; align-items: center; cursor: pointer; transition: 0.15s;
     }
-    .baris:hover { background: #1a1a1a; }
+    .baris:hover { background: #16161c; }
     .baris:last-child { border-bottom: none; }
-    .baris.baru { background: #1a2f1a; border-left: 3px solid #10b981; }
     
-    .plat { color: #10b981; font-weight: bold; font-family: monospace; }
-    .rangka { color: #f59e0b; }
-    .mesin { color: #6366f1; }
-    .waktu { color: #666; font-size: 9px; line-height: 1.4; white-space: pre-line; }
-    
-    .kosong { text-align: center; padding: 40px 20px; color: #555; font-size: 13px; }
-    .info-bawah { text-align: center; font-size: 10px; color: #444; margin-top: 8px; }
+    .plat { color: #10b981; font-weight: 800; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+    .rangka { color: #f59e0b; font-family: 'JetBrains Mono', monospace; font-size: 9px; }
+    .mesin { color: #818cf8; font-family: 'JetBrains Mono', monospace; font-size: 9px; }
+    .iduser { color: #e2e8f0; font-size: 9px; font-weight: 700; }
+    .waktu { color: #777777; font-size: 8px; line-height: 1.3; font-family: 'JetBrains Mono', monospace; }
+
+    .kosong { text-align: center; padding: 40px 20px; color: #666666; font-size: 13px; font-weight: 600; }
     .sembunyi { display: none !important; }
 
     .latar {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.92); z-index: 999; display: flex; align-items: center; justify-content: center;
-      padding: 15px;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 999;
+      display: flex; align-items: center; justify-content: center; padding: 16px;
     }
     .modal {
-      background: #111; border-radius: 14px; padding: 20px; max-width: 520px; width: 100%;
-      border: 1px solid #333; max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column;
+      background: #0f0f12; border-radius: 20px; padding: 20px; max-width: 520px; width: 100%;
+      border: 1px solid rgba(255,255,255,0.1); max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.9);
     }
-    .tutup-baris { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-    .btn-tutup { background: #333; border: none; color: #fff; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
-    .modal-judul { font-size: 16px; font-weight: bold; }
-    .isi { font-size: 12px; line-height: 1.8; margin: 10px 0; flex: 1; }
-    .dtl { padding: 4px 0; border-bottom: 1px solid #222; }
-    .lbl { color: #888; display: inline-block; min-width: 140px; font-weight: bold; }
+    .tutup-baris { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .btn-tutup { background: #22222a; border: none; color: #ffffff; padding: 8px 14px; border-radius: 10px; cursor: pointer; font-weight: 700; }
+    .modal-judul { font-size: 15px; font-weight: 800; color: #ff2233; }
+    .isi { font-size: 12px; line-height: 1.7; margin: 10px 0; flex: 1; white-space: pre-line; font-family: 'JetBrains Mono', monospace; background: #050507; padding: 14px; border-radius: 12px; border: 1px solid #1a1a20; color: #d1d5db; }
     
     .btn-wa-bawah {
-      width: 100%; padding: 14px; font-size: 15px; font-weight: bold;
-      background: #25d366; border: none; color: #fff;
-      border-radius: 10px; cursor: pointer; margin-top: 10px;
-      transition: 0.2s;
+      width: 100%; padding: 14px; font-size: 14px; font-weight: 800;
+      background: #25d366; border: none; color: #ffffff;
+      border-radius: 12px; cursor: pointer; margin-top: 10px; transition: 0.2s;
+      box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
     }
-    .btn-wa-bawah:active { transform: scale(0.97); background: #1fb858; }
+    .btn-wa-bawah:active { transform: scale(0.97); }
+
+    .toast-notif {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      background: #ff2233; color: white; padding: 12px 24px; border-radius: 30px;
+      font-weight: 800; font-size: 12px; z-index: 10000; box-shadow: 0 0 30px rgba(255, 34, 51, 0.6);
+      text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid rgba(255,255,255,0.2);
+      display: none; animation: slideDown 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+    @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
   </style>
 </head>
 <body>
 
+  <div id="toastNotif" class="toast-notif"></div>
+
+  <!-- LAYAR MASUK -->
   <div id="layarMasuk" class="layar-masuk">
     <div class="logo">
       <span class="db-putih">PUSAT KONTROL</span> <span class="ip-merah">DATABASE</span>
     </div>
-    <p class="sub">Data Real-Time • Kirim WhatsApp</p>
+    <p class="sub">Kunci Otorisasi: 222222</p>
     <div class="kotak-masuk">
-      <input type="password" id="kunci" placeholder="Masukkan Kunci Akses">
-      <button class="btn" onclick="masuk()">MASUK</button>
+      <input type="password" id="kunci" placeholder="Ketik PIN: 222222" autocomplete="off" maxlength="10">
+      <button class="btn" onclick="masuk()">MASUK SISTEM</button>
+      <p id="pesanSalah" style="color:#ff2233; margin-top:12px; font-size:12px; font-weight:700; display:none;"></p>
     </div>
   </div>
 
+  <!-- LAYAR UTAMA -->
   <div id="lap" class="sembunyi">
-    <h1 class="judul">
-      <span class="db-putih">🖥 PUSAT KONTROL</span> <span class="ip-merah">DATABASE</span>
-    </h1>
     
-    <div class="waktu-sistem">
-      <div class="waktu-jam" id="jamSistem">00:00:00</div>
-      <div class="waktu-tgl" id="tglSistem">Senin, 05 Oktober 2026</div>
+    <!-- HEADER BERHADAPAN -->
+    <div class="header-berhadapan">
+      <div class="header-judul">
+        <span class="db-putih">🖥 PUSAT KONTROL</span><br>
+        <span class="ip-merah">DATABASE REALTIME</span>
+      </div>
+      <div class="header-waktu">
+        <div class="waktu-jam" id="jamSistem">00:00:00 WIB</div>
+        <div class="waktu-tgl" id="tglSistem">Senin, 05 Okt 2026</div>
+      </div>
     </div>
 
-    <div class="notifikasi" id="kotakNotif">
-      <div class="notif-teks">🔔 DATA BARU MASUK!</div>
-      <div class="notif-info" id="infoNotif">Mengecek...</div>
+    <!-- PANEL SAKELAR REPOSITORI SEKETIKA -->
+    <div class="panel-kontrol-repo">
+      <div class="judul-kontrol">
+        <span>🔌 SAKELAR KONTROL REPOSITORI</span>
+        <span id="aktifCounter" style="color: #10b981; font-size: 10px;">4/4 AKTIF</span>
+      </div>
+      
+      <div class="baris-repo" id="row_repo1" onclick="toggleSwitch('repo1')">
+        <div>
+          <div class="nama-repo">caidpro-V552 (Server URL 1)</div>
+          <div class="url-repo">priyamcookware.com/.../lopon22.php</div>
+        </div>
+        <label class="switch" onclick="event.stopPropagation()">
+          <input type="checkbox" id="sw_repo1" checked onchange="simpanStatusSakelar('repo1')">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="baris-repo" id="row_repo2" onclick="toggleSwitch('repo2')">
+        <div>
+          <div class="nama-repo">csid-pro (Server URL 2)</div>
+          <div class="url-repo">priyamcookware.com/.../unli.php</div>
+        </div>
+        <label class="switch" onclick="event.stopPropagation()">
+          <input type="checkbox" id="sw_repo2" checked onchange="simpanStatusSakelar('repo2')">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="baris-repo" id="row_repo3" onclick="toggleSwitch('repo3')">
+        <div>
+          <div class="nama-repo">CSID_PRO-V1.8.0 (Server URL 3)</div>
+          <div class="url-repo">priyamcookware.com/.../lopon23.php</div>
+        </div>
+        <label class="switch" onclick="event.stopPropagation()">
+          <input type="checkbox" id="sw_repo3" checked onchange="simpanStatusSakelar('repo3')">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="baris-repo" id="row_firebase" onclick="toggleSwitch('firebase')">
+        <div>
+          <div class="nama-repo">⚡ FIREBASE CACHE</div>
+          <div class="url-repo">Realtime Firestore Database Sync</div>
+        </div>
+        <label class="switch" onclick="event.stopPropagation()">
+          <input type="checkbox" id="sw_firebase" checked onchange="simpanStatusSakelar('firebase')">
+          <span class="slider"></span>
+        </label>
+      </div>
     </div>
 
+    <!-- CARI LANGSUNG KE API -->
+    <div class="kotak-pencarian-api">
+      <input type="text" id="kotakNopolApi" placeholder="🔍 MASUKKAN PLAT NOMOR (CONTOH: B1011NOC)" style="margin-bottom:8px;">
+      <button class="btn-cari-api" onclick="mulaiCariKeAPI()">🔍 CEK LANGSUNG KE SERVER</button>
+    </div>
+
+    <!-- STATISTIK DATABASES -->
     <div class="statistik">
       <div class="stat-kotak stat-harian">
         <div class="stat-angka" id="jmlHari">0</div>
@@ -189,294 +304,389 @@
       </div>
     </div>
 
-    <p class="status" id="status">🔄 Menghubungkan...</p>
-    <button class="refresh" onclick="muatUlang()">🔄 REFRESH DATA</button>
-
-    <div class="menu">
-      <button class="tab-btn aktif" id="tHari" onclick="buka('hari')">HARI INI</button>
-      <button class="tab-btn" id="tMinggu" onclick="buka('minggu')">MINGGU INI</button>
-      <button class="tab-btn" id="tSemua" onclick="buka('semua')">SEMUA DATA</button>
+    <!-- FILTER CARI PADA TABEL -->
+    <div style="margin: 10px 0;">
+      <input type="text" id="kotakCari" placeholder="🔍 Filter Tabel: Nopol / Noka / Nosin / ID..." oninput="filterCari()" style="margin-bottom:0; font-size:14px; text-align:left;">
     </div>
 
+    <p class="status" id="status" style="text-align:center; font-size:11px; margin: 4px 0 8px; color:#10b981; font-weight:700;">🔄 Menghubungkan Realtime...</p>
+
+    <!-- TAB TAMPILAN -->
+    <div style="display:flex; gap:8px; margin:10px 0;">
+      <button class="tab-btn" id="tHari" onclick="bukaTab('hari')" style="flex:1; padding:10px; border:none; border-radius:10px; background:#10b981; color:#000; font-weight:800; cursor:pointer;">HARI INI</button>
+      <button class="tab-btn" id="tMinggu" onclick="bukaTab('minggu')" style="flex:1; padding:10px; border:none; border-radius:10px; background:#18181c; color:#aaa; font-weight:800; cursor:pointer;">MINGGU INI</button>
+      <button class="tab-btn" id="tSemua" onclick="bukaTab('semua')" style="flex:1; padding:10px; border:none; border-radius:10px; background:#18181c; color:#aaa; font-weight:800; cursor:pointer;">SEMUA DATA</button>
+    </div>
+
+    <!-- TABEL HEADER & DAFTAR -->
     <div class="tabel-header">
       <div>🚗 NOPOL</div>
       <div>🔶 NOKA</div>
       <div>🔷 NOSIN</div>
-      <div>🕐 WAKTU</div>
+      <div>👤 USER</div>
+      <div>🕐 WAKTU (WIB)</div>
     </div>
     <div class="daftar" id="daftarUtama">
-      <div class="kosong">⏳ Memuat data...</div>
+      <div class="kosong">⏳ Memuat database real-time...</div>
     </div>
 
-    <p class="info-bawah">👆 Klik baris untuk lihat detail & kirim ke WhatsApp</p>
   </div>
 
+  <!-- MODAL DETAIL -->
   <div id="modalLatar" class="latar sembunyi" onclick="if(event.target.id==='modalLatar') tutupDetail()">
     <div class="modal">
       <div class="tutup-baris">
-        <div class="modal-judul">DETAIL DATA</div>
+        <div class="modal-judul">📋 DETAIL LENGKAP KENDARAAN</div>
         <button class="btn-tutup" onclick="tutupDetail()">✕ Tutup</button>
       </div>
       <div class="isi" id="modalIsi"></div>
-      <button class="btn-wa-bawah" id="btnWaModal" onclick="kirimWaDariModal()">📲 KIRIM KE WHATSAPP</button>
+      <button class="btn-wa-bawah" onclick="kirimWaDariModal()">📲 BAGIKAN LAPORAN KE WHATSAPP</button>
     </div>
   </div>
 
 <script>
-const namaHari = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
-const namaBulan = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const namaHari = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+  const namaBulan = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 
-function perbaruiWaktuSistem() {
-  const skrg = new Date();
-  document.getElementById('jamSistem').textContent = 
-    [skrg.getHours(), skrg.getMinutes(), skrg.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
-  document.getElementById('tglSistem').textContent = 
-    `${namaHari[skrg.getDay()]}, ${skrg.getDate()} ${namaBulan[skrg.getMonth()]} ${skrg.getFullYear()}`;
-}
-perbaruiWaktuSistem();
-setInterval(perbaruiWaktuSistem, 1000);
+  const KUNCI_AKSES = "222222";
 
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSySyBonuHp4nd-YZKWV5IM_2HRCfJ2TQ4zJaY",
-  authDomain: "gen-lang-client-0221970857.firebaseapp.com",
-  databaseURL: "https://gen-lang-client-0221970857-default-rtdb.firebaseio.com",
-  projectId: "gen-lang-client-0221970857",
-  storageBucket: "gen-lang-client-0221970857.firebasestorage.app",
-  messagingSenderId: "483674298302",
-  appId: "1:483674298302:web:8c6ccf111af4de7bbecbef"
-};
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyBonuHp4nd-YZKWV5IM_2HRCfJ2TQ4zJaY",
+    authDomain: "gen-lang-client-0221970857.firebaseapp.com",
+    databaseURL: "https://gen-lang-client-0221970857-default-rtdb.firebaseio.com",
+    projectId: "gen-lang-client-0221970857",
+    storageBucket: "gen-lang-client-0221970857.firebasestorage.app",
+    messagingSenderId: "483674298302",
+    appId: "1:483674298302:web:8c6ccf111af4de7bbecbef"
+  };
 
-if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-const db = firebase.firestore();
-let semuaData = [];
-let pengamat = null;
-let tabAktif = 'hari';
-let jumlahDataSebelum = 0;
-let docIdTerpilih = null;
+  if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+  const db = firebase.firestore();
 
-function masuk() {
-  if (document.getElementById('kunci').value.trim() === "222222") {
-    document.getElementById('layarMasuk').classList.add('sembunyi');
-    document.getElementById('lap').classList.remove('sembunyi');
-    mulaiPantau();
-  } else {
-    alert("❌ Kunci salah!");
-    document.getElementById('kunci').value = "";
+  // STATE SAKELAR MUTLAK
+  const SAKELAR = {
+    repo1: true,
+    repo2: true,
+    repo3: true,
+    firebase: true
+  };
+
+  const URL_SERVERS = {
+    repo1: "https://priyamcookware.com/wp-admin/lopon/lopon22.php?key=nopolnumber&q=",
+    repo2: "https://priyamcookware.com/wp-admin/loponunli/unli.php?key=nopolnumber&q=",
+    repo3: "https://priyamcookware.com/wp-admin/lopon22/lopon23.php?key=lopon23&q="
+  };
+
+  function showToast(msg) {
+    const toast = document.getElementById('toastNotif');
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 3000);
   }
-}
 
-function hitungStatistik() {
-  const skrg = new Date();
-  const awalHari = new Date(skrg.getFullYear(), skrg.getMonth(), skrg.getDate());
-  const awalMinggu = new Date(skrg.getTime() - (skrg.getDay() * 86400000));
-  const awalBulan = new Date(skrg.getFullYear(), skrg.getMonth(), 1);
-  const awalTahun = new Date(skrg.getFullYear(), 0, 1);
+  function masuk() {
+    const input = document.getElementById('kunci').value.trim();
+    if (input === KUNCI_AKSES) {
+      document.getElementById('layarMasuk').classList.add('sembunyi');
+      document.getElementById('lap').classList.remove('sembunyi');
+      muatStatusSakelar();
+      mulaiPantauFirebase();
+    } else {
+      const pesan = document.getElementById('pesanSalah');
+      pesan.style.display = 'block';
+      pesan.textContent = '❌ PIN KUNCI SALAH!';
+      document.getElementById('kunci').value = "";
+    }
+  }
 
-  let hari = 0, minggu = 0, bulan = 0, tahun = 0;
-  
-  semuaData.forEach(doc => {
-    const d = doc.data();
-    if (!d.waktu_ditemukan) return;
-    const tgl = new Date(d.waktu_ditemukan.seconds * 1000);
-    if (tgl >= awalHari) hari++;
-    if (tgl >= awalMinggu) minggu++;
-    if (tgl >= awalBulan) bulan++;
-    if (tgl >= awalTahun) tahun++;
+  document.getElementById('kunci').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') masuk();
   });
 
-  document.getElementById('jmlHari').textContent = hari;
-  document.getElementById('jmlMinggu').textContent = minggu;
-  document.getElementById('jmlBulan').textContent = bulan;
-  document.getElementById('jmlTahun').textContent = tahun;
-}
-
-function cekDataBaru() {
-  if (semuaData.length > jumlahDataSebelum && jumlahDataSebelum > 0) {
-    const dataBaru = semuaData.length - jumlahDataSebelum;
-    document.getElementById('kotakNotif').classList.add('aktif');
-    document.getElementById('infoNotif').textContent = 
-      `${dataBaru} data baru diterima • Total: ${semuaData.length}`;
-      
-    setTimeout(() => {
-      document.getElementById('kotakNotif').classList.remove('aktif');
-    }, 10000);
+  function perbaruiWaktuSistem() {
+    const d = new Date();
+    const jam = String(d.getHours()).padStart(2, '0');
+    const menit = String(d.getMinutes()).padStart(2, '0');
+    const detik = String(d.getSeconds()).padStart(2, '0');
+    
+    document.getElementById('jamSistem').textContent = `${jam}:${menit}:${detik} WIB`;
+    document.getElementById('tglSistem').textContent = `${namaHari[d.getDay()]}, ${d.getDate()} ${namaBulan[d.getMonth()].substring(0,3)} ${d.getFullYear()}`;
   }
-  jumlahDataSebelum = semuaData.length;
-}
+  setInterval(perbaruiWaktuSistem, 1000);
+  perbaruiWaktuSistem();
 
-function mulaiHari() { const d = new Date(); d.setHours(0,0,0,0); return d; }
-function mulaiMinggu() { const d = new Date(); d.setDate(d.getDate() - d.getDay()); d.setHours(0,0,0,0); return d; }
-function dalam(timestamp, batas) {
-  if (!timestamp) return true;
-  return new Date(timestamp.seconds * 1000) >= batas;
-}
-
-function ambilNilai(data, daftarKunci) {
-  for (const k of daftarKunci) {
-    if (data[k] && String(data[k]).trim() !== '') return String(data[k]).trim().toUpperCase();
-  }
-  return "-";
-}
-function ambilPlat(d) {
-  const k = ['NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL'];
-  let v = ambilNilai(d, k);
-  if (v === "-") {
-    const cocok = JSON.stringify(d).toUpperCase().match(/\b[A-Z]{1,2}\s*\d{1,4}\s*[A-Z]{0,3}\b/);
-    if (cocok) v = cocok[0];
-  }
-  return v;
-}
-function ambilNoka(d) { return ambilNilai(d, ['Noka','no_rangka','rangka','NoRangka','NORANGKA']); }
-function ambilNosin(d) { return ambilNilai(d, ['Nosin','no_mesin','mesin','NoMesin','NOMESIN']); }
-
-function formatWaktu(ts) {
-  if (!ts) return "-";
-  const d = new Date(ts.seconds * 1000);
-  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} — ${namaHari[d.getDay()]}, ${d.getDate()} ${namaBulan[d.getMonth()]}`;
-}
-
-// ✅ FORMAT PESAN WHATSAPP — PERSIS SEPERTI CONTOH
-function buatPesanWa(d) {
-  const plat = ambilPlat(d);
-  const noka = ambilNoka(d);
-  const nosin = ambilNosin(d);
-  const waktu = d.waktu_ditemukan ? formatWaktu(d.waktu_ditemukan) : "-";
-  
-  const kunciDikecualikan = [
-    'waktu_ditemukan','NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL',
-    'Noka','no_rangka','rangka','NoRangka','NORANGKA',
-    'Nosin','no_mesin','mesin','NoMesin','NOMESIN'
-  ];
-  
-  let rincian = '';
-  for (const [k, v] of Object.entries(d)) {
-    if (kunciDikecualikan.includes(k)) continue;
-    let nilai = v;
-    if (nilai === null || nilai === undefined || nilai === "" || nilai === "null") {
-      nilai = "-";
-    } else if (typeof nilai === 'object') {
-      nilai = JSON.stringify(nilai);
-    }
-    rincian += `• ${k.toUpperCase()} : ${nilai}\n`;
-  }
-  
-  return `DATABASE IP REAL-TIME
-━━━━━━━━━━━━━━━━━━━━
-🚗 NOPOL : ${plat}
-🔶 NOKA  : ${noka}
-🔷 NOSIN : ${nosin}
-🕐 WAKTU : ${waktu}
-━━━━━━━━━━━━━━━━━━━━
-${rincian}thank you..`;
-}
-
-function kirimWa(doc) {
-  const pesan = buatPesanWa(doc.data());
-  const url = `https://wa.me/?text=${encodeURIComponent(pesan)}`;
-  window.open(url, '_blank');
-}
-
-function kirimWaDariModal() {
-  if (!docIdTerpilih) return;
-  const doc = semuaData.find(d => d.id === docIdTerpilih);
-  if (!doc) return;
-  kirimWa(doc);
-}
-
-function mulaiPantau() {
-  if (pengamat) pengamat();
-  
-  pengamat = db.collection('pencarian')
-    .orderBy('waktu_ditemukan', 'desc')
-    .limit(3000)
-    .onSnapshot(snap => {
-      semuaData = snap.docs;
-      document.getElementById('status').textContent = `✅ TERHUBUNG — ${snap.size} data tersimpan`;
-      
-      hitungStatistik();
-      cekDataBaru();
-      tampil();
-    }, err => {
-      document.getElementById('status').textContent = `⚠️ ${err.message}`;
-      document.getElementById('status').className = 'status salah';
+  function muatStatusSakelar() {
+    ['repo1', 'repo2', 'repo3', 'firebase'].forEach(key => {
+      const saved = localStorage.getItem(`sakelar_${key}`);
+      if (saved !== null) SAKELAR[key] = saved === 'true';
+      document.getElementById(`sw_${key}`).checked = SAKELAR[key];
+      updateRowVisual(key);
     });
-}
-
-function muatUlang() {
-  jumlahDataSebelum = 0;
-  mulaiPantau();
-  document.getElementById('status').textContent = '🔄 Memuat ulang...';
-}
-
-function tampil() {
-  let dataFilter = [...semuaData];
-  
-  if (tabAktif === 'hari') {
-    dataFilter = dataFilter.filter(d => dalam(d.data().waktu_ditemukan, mulaiHari()));
-  } else if (tabAktif === 'minggu') {
-    dataFilter = dataFilter.filter(d => dalam(d.data().waktu_ditemukan, mulaiMinggu()));
+    updateCounter();
   }
 
-  const el = document.getElementById('daftarUtama');
-  if (!dataFilter.length) {
-    el.innerHTML = '<div class="kosong">Belum ada data di periode ini</div>';
-    return;
+  function toggleSwitch(key) {
+    const sw = document.getElementById(`sw_${key}`);
+    sw.checked = !sw.checked;
+    simpanStatusSakelar(key);
   }
 
-  const sepuluhMenitLalu = Date.now() - 600000;
-  
-  el.innerHTML = dataFilter.map(doc => {
-    const d = doc.data();
-    const plat = ambilPlat(d);
-    const noka = ambilNoka(d);
-    const nosin = ambilNosin(d);
-    const waktu = formatWaktu(d.waktu_ditemukan);
-    
-    let kelasBaru = '';
-    if (d.waktu_ditemukan && (d.waktu_ditemukan.seconds * 1000) > sepuluhMenitLalu) {
-      kelasBaru = 'baru';
+  function simpanStatusSakelar(key) {
+    const active = document.getElementById(`sw_${key}`).checked;
+    SAKELAR[key] = active;
+    localStorage.setItem(`sakelar_${key}`, active);
+    updateRowVisual(key);
+    updateCounter();
+
+    if (key === 'firebase') {
+      if (!active) {
+        if (unsubscribeFirebase) unsubscribeFirebase();
+        semuaData = [];
+        tampilTabel();
+        showToast("⚡ FIREBASE CACHE DIMATIKAN");
+      } else {
+        mulaiPantauFirebase();
+        showToast("⚡ FIREBASE CACHE DIAKTIFKAN");
+      }
+    } else {
+      showToast(`REPOSITORI ${key.toUpperCase()} ${active ? 'AKTIF' : 'DIMATIKAN'}`);
     }
-    
-    return `
-      <div class="baris ${kelasBaru}" onclick="bukaDetail('${doc.id}')">
+  }
+
+  function updateRowVisual(key) {
+    const row = document.getElementById(`row_${key}`);
+    if (SAKELAR[key]) {
+      row.classList.remove('repo-mati');
+    } else {
+      row.classList.add('repo-mati');
+    }
+  }
+
+  function updateCounter() {
+    const total = Object.values(SAKELAR).filter(Boolean).length;
+    document.getElementById('aktifCounter').textContent = `${total}/4 AKTIF`;
+  }
+
+  // --- FUNGSI PENCARIAN MUTLAK DENGAN GERBANG BOOLEAN SAKELAR ---
+  async function mulaiCariKeAPI() {
+    const input = document.getElementById('kotakNopolApi').value.trim().toUpperCase();
+    if (!input) { showToast("⚠️ MASUKKAN PLAT NOMOR!"); return; }
+
+    const cleanQuery = input.replace(/\s+/g, '');
+
+    // 1. GERBANG FIREBASE CACHE
+    if (SAKELAR.firebase) {
+      try {
+        const docSnap = await db.collection('pencarian').doc(cleanQuery).get();
+        if (docSnap.exists) {
+          bukaDetailDariData(docSnap.data(), "✅ DARI FIREBASE CACHE");
+          showToast("DATA DITEMUKAN (FIREBASE)");
+          return;
+        }
+      } catch (e) { console.log("Firebase Check Error:", e); }
+    }
+
+    // 2. KUMPULKAN URL HANYA JIKA SAKELARNYA TRUE
+    const activeEndpoints = [];
+    if (SAKELAR.repo1) activeEndpoints.push(URL_SERVERS.repo1 + cleanQuery);
+    if (SAKELAR.repo2) activeEndpoints.push(URL_SERVERS.repo2 + cleanQuery);
+    if (SAKELAR.repo3) activeEndpoints.push(URL_SERVERS.repo3 + cleanQuery);
+
+    if (activeEndpoints.length === 0) {
+      showToast("❌ SEMUA SAKELAR SERVER DIMATIKAN!");
+      return;
+    }
+
+    showToast("🔍 MENGHUBUNGI SERVER AKTIF...");
+
+    for (let url of activeEndpoints) {
+      try {
+        const targetUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+        const res = await fetch(targetUrl);
+        if (res.ok) {
+          const text = await res.text();
+          let parsed = null;
+          try { parsed = JSON.parse(text); } catch(e){}
+
+          if (parsed) {
+            // SIMPAN KE FIREBASE HANYA JIKA SAKELAR FIREBASE AKTIF
+            if (SAKELAR.firebase) {
+              db.collection('pencarian').doc(cleanQuery).set({
+                ...parsed,
+                waktu_ditemukan: firebase.firestore.FieldValue.serverTimestamp()
+              }, { merge: true });
+            }
+            bukaDetailDariData(parsed, "✅ DARI SERVER PUSAT");
+            showToast("DATA DITEMUKAN!");
+            return;
+          }
+        }
+      } catch(e) { continue; }
+    }
+
+    showToast("❌ DATA TIDAK DITEMUKAN DI REPO AKTIF");
+  }
+
+  let semuaData = [];
+  let unsubscribeFirebase = null;
+  let tabAktif = 'hari';
+  let kataKunciCari = '';
+
+  function mulaiPantauFirebase() {
+    if (!SAKELAR.firebase) return;
+    if (unsubscribeFirebase) unsubscribeFirebase();
+
+    document.getElementById('status').textContent = '🔄 Menghubungkan Realtime Firebase...';
+
+    unsubscribeFirebase = db.collection('pencarian')
+      .orderBy('waktu_ditemukan', 'desc')
+      .limit(2000)
+      .onSnapshot(snap => {
+        if (!SAKELAR.firebase) return;
+        semuaData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        document.getElementById('status').textContent = `✅ TERHUBUNG REALTIME — ${snap.size} DATA`;
+        hitungStatistik();
+        tampilTabel();
+      }, err => {
+        document.getElementById('status').textContent = `⚠ KONEKSI BATAL: ${err.message}`;
+      });
+  }
+
+  function hitungStatistik() {
+    if (!SAKELAR.firebase) return;
+    const skrg = new Date();
+    const awalHari = new Date(skrg.getFullYear(), skrg.getMonth(), skrg.getDate()).getTime();
+    const awalMinggu = new Date(skrg.getTime() - (skrg.getDay() * 86400000)).getTime();
+    const awalBulan = new Date(skrg.getFullYear(), skrg.getMonth(), 1).getTime();
+    const awalTahun = new Date(skrg.getFullYear(), 0, 1).getTime();
+
+    let h = 0, m = 0, b = 0, t = 0;
+
+    semuaData.forEach(d => {
+      let ts = d.waktu_ditemukan ? (d.waktu_ditemukan.seconds * 1000) : Date.now();
+      if (ts >= awalHari) h++;
+      if (ts >= awalMinggu) m++;
+      if (ts >= awalBulan) b++;
+      if (ts >= awalTahun) t++;
+    });
+
+    document.getElementById('jmlHari').textContent = h;
+    document.getElementById('jmlMinggu').textContent = m;
+    document.getElementById('jmlBulan').textContent = b;
+    document.getElementById('jmlTahun').textContent = t;
+  }
+
+  function formatWaktuDetail(ts) {
+    if (!ts) return "-";
+    const d = new Date(ts.seconds ? ts.seconds * 1000 : ts);
+    const jam = String(d.getHours()).padStart(2, '0');
+    const mnt = String(d.getMinutes()).padStart(2, '0');
+    const dtk = String(d.getSeconds()).padStart(2, '0');
+    return `${namaHari[d.getDay()]}, ${d.getDate()} ${namaBulan[d.getMonth()]} ${d.getFullYear()} • ${jam}:${mnt}:${dtk} WIB`;
+  }
+
+  function ambilPlat(d) { return (d.nopol || d.NopolServer || d.plat || d.NO_POL || '-').toString().toUpperCase(); }
+  function ambilNoka(d) { return (d.no_rangka || d.NoRangka || d.noka || '-').toString().toUpperCase(); }
+  function ambilNosin(d) { return (d.no_mesin || d.NoMesin || d.nosin || '-').toString().toUpperCase(); }
+  function ambilId(d) { return (d.userId || d.id_user || d.sumber || 'CSID.PRO').toString().toUpperCase(); }
+
+  function filterCari() {
+    kataKunciCari = document.getElementById('kotakCari').value.trim().toUpperCase();
+    tampilTabel();
+  }
+
+  function bukaTab(nama) {
+    tabAktif = nama;
+    document.querySelectorAll('.tab-btn').forEach(b => { b.style.background = '#18181c'; b.style.color = '#aaa'; });
+    document.getElementById(`t${nama[0].toUpperCase()}${nama.slice(1)}`).style.background = '#10b981';
+    document.getElementById(`t${nama[0].toUpperCase()}${nama.slice(1)}`).style.color = '#000';
+    tampilTabel();
+  }
+
+  function tampilTabel() {
+    const el = document.getElementById('daftarUtama');
+    if (!SAKELAR.firebase) {
+      el.innerHTML = '<div class="kosong">⚠️ FIREBASE CACHE DIMATIKAN OLEH SAKELAR</div>';
+      return;
+    }
+
+    const skrg = new Date();
+    const awalHari = new Date(skrg.getFullYear(), skrg.getMonth(), skrg.getDate()).getTime();
+    const awalMinggu = new Date(skrg.getTime() - (skrg.getDay() * 86400000)).getTime();
+
+    let dataFilter = [...semuaData];
+
+    if (tabAktif === 'hari') {
+      dataFilter = dataFilter.filter(d => {
+        let ts = d.waktu_ditemukan ? (d.waktu_ditemukan.seconds * 1000) : Date.now();
+        return ts >= awalHari;
+      });
+    } else if (tabAktif === 'minggu') {
+      dataFilter = dataFilter.filter(d => {
+        let ts = d.waktu_ditemukan ? (d.waktu_ditemukan.seconds * 1000) : Date.now();
+        return ts >= awalMinggu;
+      });
+    }
+
+    if (kataKunciCari) {
+      dataFilter = dataFilter.filter(d => {
+        return [ambilPlat(d), ambilNoka(d), ambilNosin(d), ambilId(d)].join(' ').includes(kataKunciCari);
+      });
+    }
+
+    if (dataFilter.length === 0) {
+      el.innerHTML = '<div class="kosong">Belum ada entri data ditemukan</div>';
+      return;
+    }
+
+    el.innerHTML = dataFilter.map(d => {
+      const plat = ambilPlat(d);
+      const noka = ambilNoka(d);
+      const nosin = ambilNosin(d);
+      const idUser = ambilId(d);
+      const waktuTeks = formatWaktuDetail(d.waktu_ditemukan);
+
+      return `<div class="baris" onclick="bukaDetailByDocId('${d.id}')">
         <div class="plat">${plat}</div>
         <div class="rangka">${noka}</div>
         <div class="mesin">${nosin}</div>
-        <div class="waktu">${waktu}</div>
+        <div class="iduser">${idUser}</div>
+        <div class="waktu">${waktuTeks}</div>
       </div>`;
-  }).join('');
-}
-
-function bukaDetail(id) {
-  docIdTerpilih = id;
-  const doc = semuaData.find(d => d.id === id);
-  if (!doc) return;
-  const d = doc.data();
-  
-  let html = '';
-  for (const [k, v] of Object.entries(d)) {
-    let nilai = v;
-    if (nilai === null || nilai === undefined || nilai === "") {
-      nilai = "-";
-    } else if (typeof nilai === 'object') {
-      nilai = JSON.stringify(nilai, null, 2);
-    }
-    html += `<div class="dtl"><span class="lbl">${k.toUpperCase()}</span>${nilai}</div>`;
+    }).join('');
   }
-  document.getElementById('modalIsi').innerHTML = html;
-  document.getElementById('modalLatar').classList.remove('sembunyi');
-}
-function tutupDetail() {
-  document.getElementById('modalLatar').classList.add('sembunyi');
-  docIdTerpilih = null;
-}
 
-function buka(nama) {
-  tabAktif = nama;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('aktif'));
-  document.getElementById(`t${nama[0].toUpperCase()}${nama.slice(1)}`).classList.add('aktif');
-  tampil();
-}
+  function bukaDetailByDocId(id) {
+    if (!SAKELAR.firebase) return;
+    const item = semuaData.find(x => x.id === id);
+    if (item) bukaDetailDariData(item, "📋 DATA REALTIME FIREBASE");
+  }
+
+  function bukaDetailDariData(data, sumber) {
+    window.dataDetailAktif = data;
+    const waktuTeks = formatWaktuDetail(data.waktu_ditemukan || Date.now());
+
+    let teks = `${sumber}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🕐 WAKTU PENGECEKAN:\n${waktuTeks}\n\n`;
+    
+    for (let [k, v] of Object.entries(data)) {
+      if (k === 'waktu_ditemukan' || k === 'id') continue;
+      teks += `${k.toUpperCase()} : ${v || '-'}\n`;
+    }
+
+    document.getElementById('modalIsi').textContent = teks;
+    document.getElementById('modalLatar').classList.remove('sembunyi');
+  }
+
+  function tutupDetail() {
+    document.getElementById('modalLatar').classList.add('sembunyi');
+  }
+
+  function kirimWaDariModal() {
+    if (!window.dataDetailAktif) return;
+    const teks = document.getElementById('modalIsi').textContent;
+    const urlWa = `https://api.whatsapp.com/send?text=${encodeURIComponent(teks)}`;
+    window.open(urlWa, '_blank');
+  }
 </script>
 </body>
 </html>
