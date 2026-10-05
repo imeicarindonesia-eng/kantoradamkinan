@@ -17,7 +17,6 @@
     .db-putih { color: #ffffff; }
     .ip-merah { color: #ff0000; }
 
-    /* LAYAR MASUK */
     .layar-masuk { margin-top: 120px; text-align: center; }
     .logo { font-size: 30px; font-weight: 900; margin-bottom: 5px; }
     .sub { color: #888; font-size: 13px; margin-bottom: 30px; }
@@ -38,7 +37,6 @@
     }
     .btn:active { transform: scale(0.97); background: #cc0000; }
 
-    /* ⏰ WAKTU SISTEM */
     .waktu-sistem {
       background: #111; padding: 10px; border-radius: 10px; text-align: center;
       margin-bottom: 10px; border: 1px solid #222;
@@ -46,7 +44,6 @@
     .waktu-jam { font-size: 22px; font-weight: bold; color: #10b981; font-family: monospace; }
     .waktu-tgl { font-size: 12px; color: #aaa; margin-top: 2px; }
 
-    /* 🔔 NOTIFIKASI DATA BARU */
     .notifikasi {
       background: #1a2f1a; border: 1px solid #10b981; border-radius: 10px;
       padding: 10px 14px; margin-bottom: 10px; display: none;
@@ -60,7 +57,6 @@
     .notif-teks { color: #10b981; font-weight: bold; font-size: 14px; }
     .notif-info { font-size: 11px; color: #999; margin-top: 2px; }
 
-    /* 📊 STATISTIK */
     .statistik {
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px;
     }
@@ -79,7 +75,6 @@
     .stat-tahunan .stat-angka { color: #ec4899; }
     .stat-label { font-size: 9px; color: #888; margin-top: 2px; }
 
-    /* MENU TAB */
     .menu { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
     .tab-btn {
       padding: 10px 6px; font-size: 12px; font-weight: bold;
@@ -93,7 +88,6 @@
     }
     .refresh:active { background: #0ea874; }
 
-    /* DAFTAR DATA */
     .judul { text-align: center; font-size: 20px; font-weight: bold; margin: 8px 0; }
     .status { text-align: center; font-size: 11px; margin: 4px 0 8px; color: #0f0; }
     .status.salah { color: #f44; }
@@ -123,7 +117,6 @@
     .info-bawah { text-align: center; font-size: 10px; color: #444; margin-top: 8px; }
     .sembunyi { display: none !important; }
 
-    /* MODAL DETAIL — TOMBOL WA DI BAWAH */
     .latar {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.92); z-index: 999; display: flex; align-items: center; justify-content: center;
@@ -138,7 +131,7 @@
     .modal-judul { font-size: 16px; font-weight: bold; }
     .isi { font-size: 12px; line-height: 1.8; margin: 10px 0; flex: 1; }
     .dtl { padding: 4px 0; border-bottom: 1px solid #222; }
-    .lbl { color: #888; display: inline-block; min-width: 100px; }
+    .lbl { color: #888; display: inline-block; min-width: 140px; font-weight: bold; }
     
     .btn-wa-bawah {
       width: 100%; padding: 14px; font-size: 15px; font-weight: bold;
@@ -151,7 +144,6 @@
 </head>
 <body>
 
-  <!-- LAYAR MASUK -->
   <div id="layarMasuk" class="layar-masuk">
     <div class="logo">
       <span class="db-putih">DATABASE</span> <span class="ip-merah">IP REAL-TIME</span>
@@ -163,25 +155,21 @@
     </div>
   </div>
 
-  <!-- HALAMAN UTAMA — TANPA CARI & TANPA RIWAYAT LOGIN -->
   <div id="lap" class="sembunyi">
     <h1 class="judul">
       <span class="db-putih">📡 DATABASE</span> <span class="ip-merah">IP REAL-TIME</span>
     </h1>
     
-    <!-- ⏰ WAKTU SISTEM -->
     <div class="waktu-sistem">
       <div class="waktu-jam" id="jamSistem">00:00:00</div>
       <div class="waktu-tgl" id="tglSistem">Senin, 05 Oktober 2026</div>
     </div>
 
-    <!-- 🔔 NOTIFIKASI DATA BARU -->
     <div class="notifikasi" id="kotakNotif">
       <div class="notif-teks">🔔 DATA BARU MASUK!</div>
       <div class="notif-info" id="infoNotif">Mengecek...</div>
     </div>
 
-    <!-- 📊 STATISTIK -->
     <div class="statistik">
       <div class="stat-kotak stat-harian">
         <div class="stat-angka" id="jmlHari">0</div>
@@ -210,7 +198,6 @@
       <button class="tab-btn" id="tSemua" onclick="buka('semua')">SEMUA DATA</button>
     </div>
 
-    <!-- TABEL DATA -->
     <div class="tabel-header">
       <div>🚗 NOPOL</div>
       <div>🔶 NOKA</div>
@@ -224,7 +211,6 @@
     <p class="info-bawah">👆 Klik baris untuk lihat detail & kirim ke WhatsApp</p>
   </div>
 
-  <!-- MODAL DETAIL -->
   <div id="modalLatar" class="latar sembunyi" onclick="if(event.target.id==='modalLatar') tutupDetail()">
     <div class="modal">
       <div class="tutup-baris">
@@ -237,9 +223,6 @@
   </div>
 
 <script>
-// ==================================================
-// ⏰ WAKTU SISTEM
-// ==================================================
 const namaHari = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
 const namaBulan = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 
@@ -253,9 +236,6 @@ function perbaruiWaktuSistem() {
 perbaruiWaktuSistem();
 setInterval(perbaruiWaktuSistem, 1000);
 
-// ==================================================
-// 🔧 FIREBASE
-// ==================================================
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSySyBonuHp4nd-YZKWV5IM_2HRCfJ2TQ4zJaY",
   authDomain: "gen-lang-client-0221970857.firebaseapp.com",
@@ -274,9 +254,6 @@ let tabAktif = 'hari';
 let jumlahDataSebelum = 0;
 let docIdTerpilih = null;
 
-// ==================================================
-// 🔐 KUNCI MASUK — TANPA SIMPAN RIWAYAT LOGIN
-// ==================================================
 function masuk() {
   if (document.getElementById('kunci').value.trim() === "222222") {
     document.getElementById('layarMasuk').classList.add('sembunyi');
@@ -288,9 +265,6 @@ function masuk() {
   }
 }
 
-// ==================================================
-// 📊 HITUNG STATISTIK
-// ==================================================
 function hitungStatistik() {
   const skrg = new Date();
   const awalHari = new Date(skrg.getFullYear(), skrg.getMonth(), skrg.getDate());
@@ -316,9 +290,6 @@ function hitungStatistik() {
   document.getElementById('jmlTahun').textContent = tahun;
 }
 
-// ==================================================
-// 🔔 NOTIFIKASI DATA BARU
-// ==================================================
 function cekDataBaru() {
   if (semuaData.length > jumlahDataSebelum && jumlahDataSebelum > 0) {
     const dataBaru = semuaData.length - jumlahDataSebelum;
@@ -333,9 +304,6 @@ function cekDataBaru() {
   jumlahDataSebelum = semuaData.length;
 }
 
-// ==================================================
-// 📅 BATAS WAKTU FILTER
-// ==================================================
 function mulaiHari() { const d = new Date(); d.setHours(0,0,0,0); return d; }
 function mulaiMinggu() { const d = new Date(); d.setDate(d.getDate() - d.getDay()); d.setHours(0,0,0,0); return d; }
 function dalam(timestamp, batas) {
@@ -343,9 +311,6 @@ function dalam(timestamp, batas) {
   return new Date(timestamp.seconds * 1000) >= batas;
 }
 
-// ==================================================
-// 🔍 AMBIL NILAI
-// ==================================================
 function ambilNilai(data, daftarKunci) {
   for (const k of daftarKunci) {
     if (data[k] && String(data[k]).trim() !== '') return String(data[k]).trim().toUpperCase();
@@ -353,7 +318,7 @@ function ambilNilai(data, daftarKunci) {
   return "-";
 }
 function ambilPlat(d) {
-  const k = ['NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor'];
+  const k = ['NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL'];
   let v = ambilNilai(d, k);
   if (v === "-") {
     const cocok = JSON.stringify(d).toUpperCase().match(/\b[A-Z]{1,2}\s*\d{1,4}\s*[A-Z]{0,3}\b/);
@@ -361,31 +326,38 @@ function ambilPlat(d) {
   }
   return v;
 }
-function ambilNoka(d) { return ambilNilai(d, ['Noka','no_rangka','rangka','NoRangka']); }
-function ambilNosin(d) { return ambilNilai(d, ['Nosin','no_mesin','mesin','NoMesin']); }
+function ambilNoka(d) { return ambilNilai(d, ['Noka','no_rangka','rangka','NoRangka','NORANGKA']); }
+function ambilNosin(d) { return ambilNilai(d, ['Nosin','no_mesin','mesin','NoMesin','NOMESIN']); }
 
-// ==================================================
-// ⏰ FORMAT WAKTU
-// ==================================================
 function formatWaktu(ts) {
   if (!ts) return "-";
   const d = new Date(ts.seconds * 1000);
-  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}\n${namaHari[d.getDay()]}, ${d.getDate()} ${namaBulan[d.getMonth()]}`;
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} — ${namaHari[d.getDay()]}, ${d.getDate()} ${namaBulan[d.getMonth()]}`;
 }
 
-// ==================================================
-// 📲 KIRIM KE WHATSAPP
-// ==================================================
+// ✅ FORMAT PESAN WHATSAPP — PERSIS SEPERTI CONTOH
 function buatPesanWa(d) {
   const plat = ambilPlat(d);
   const noka = ambilNoka(d);
   const nosin = ambilNosin(d);
-  const waktu = d.waktu_ditemukan ? formatWaktu(d.waktu_ditemukan).replace('\n', ' — ') : "-";
+  const waktu = d.waktu_ditemukan ? formatWaktu(d.waktu_ditemukan) : "-";
+  
+  const kunciDikecualikan = [
+    'waktu_ditemukan','NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL',
+    'Noka','no_rangka','rangka','NoRangka','NORANGKA',
+    'Nosin','no_mesin','mesin','NoMesin','NOMESIN'
+  ];
   
   let rincian = '';
   for (const [k, v] of Object.entries(d)) {
-    if (['waktu_ditemukan'].includes(k)) continue;
-    rincian += `\n• ${k.toUpperCase()} : ${typeof v==='object'?JSON.stringify(v):v}`;
+    if (kunciDikecualikan.includes(k)) continue;
+    let nilai = v;
+    if (nilai === null || nilai === undefined || nilai === "" || nilai === "null") {
+      nilai = "-";
+    } else if (typeof nilai === 'object') {
+      nilai = JSON.stringify(nilai);
+    }
+    rincian += `• ${k.toUpperCase()} : ${nilai}\n`;
   }
   
   return `DATABASE IP REAL-TIME
@@ -395,9 +367,7 @@ function buatPesanWa(d) {
 🔷 NOSIN : ${nosin}
 🕐 WAKTU : ${waktu}
 ━━━━━━━━━━━━━━━━━━━━
-${rincian}
-
-——— Dikirim dari CSID.PRO ———`;
+${rincian}thank you..`;
 }
 
 function kirimWa(doc) {
@@ -413,9 +383,6 @@ function kirimWaDariModal() {
   kirimWa(doc);
 }
 
-// ==================================================
-// 🔄 PANTAU DATA REAL-TIME
-// ==================================================
 function mulaiPantau() {
   if (pengamat) pengamat();
   
@@ -441,9 +408,6 @@ function muatUlang() {
   document.getElementById('status').textContent = '🔄 Memuat ulang...';
 }
 
-// ==================================================
-// 📄 TAMPILKAN DAFTAR
-// ==================================================
 function tampil() {
   let dataFilter = [...semuaData];
   
@@ -483,9 +447,6 @@ function tampil() {
   }).join('');
 }
 
-// ==================================================
-// 👁️ DETAIL DATA
-// ==================================================
 function bukaDetail(id) {
   docIdTerpilih = id;
   const doc = semuaData.find(d => d.id === id);
@@ -494,8 +455,13 @@ function bukaDetail(id) {
   
   let html = '';
   for (const [k, v] of Object.entries(d)) {
-    if (k === 'waktu_ditemukan') continue;
-    html += `<div class="dtl"><span class="lbl">${k}</span> ${typeof v==='object'?JSON.stringify(v,null,2):v}</div>`;
+    let nilai = v;
+    if (nilai === null || nilai === undefined || nilai === "") {
+      nilai = "-";
+    } else if (typeof nilai === 'object') {
+      nilai = JSON.stringify(nilai, null, 2);
+    }
+    html += `<div class="dtl"><span class="lbl">${k.toUpperCase()}</span>${nilai}</div>`;
   }
   document.getElementById('modalIsi').innerHTML = html;
   document.getElementById('modalLatar').classList.remove('sembunyi');
@@ -505,9 +471,6 @@ function tutupDetail() {
   docIdTerpilih = null;
 }
 
-// ==================================================
-// 🔄 GANTI TAB
-// ==================================================
 function buka(nama) {
   tabAktif = nama;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('aktif'));
