@@ -1,38 +1,21 @@
 <!DOCTYPE html>
-<html lang="id" class="dark">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>PUSAT KONTROL — DATABASE REAL-TIME</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DATABASE IP REAL-TIME</title>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      overflow-x: hidden; /* 🔒 Seluruh layar TIDAK bisa geser samping */
-      position: relative;
-      width: 100%;
-    }
     body { 
       font-family: 'Arial', sans-serif; 
       background: #000; color: #fff; 
-      padding: 12px; max-width: 100%; margin: 0 auto; min-height: 100vh;
-      padding-bottom: 80px;
+      padding: 12px; max-width: 760px; margin: 0 auto; min-height: 100vh;
     }
 
-    .baris-atas {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #222;
-      flex-wrap: wrap; gap: 8px;
-    }
-    .bagian-kiri { flex: 1; min-width: 200px; }
-    .judul-putih { color: #ffffff; font-weight: 900; font-size: 20px; }
-    .judul-merah { color: #ff0000; }
-    .total-data { font-size: 12px; color: #aaa; margin-top: 4px; }
-    .total-angka { color: #10b981; font-weight: bold; font-size: 14px; }
-    .waktu-kanan { text-align: right; color: #ffffff; min-width: 140px; }
-    .jam-atas { font-size: 20px; font-weight: bold; font-family: monospace; }
-    .tgl-atas { font-size: 11px; color: #cccccc; margin-top: 2px; }
+    .db-putih { color: #ffffff; }
+    .ip-merah { color: #ff0000; }
 
     .layar-masuk { margin-top: 120px; text-align: center; }
     .logo { font-size: 30px; font-weight: 900; margin-bottom: 5px; }
@@ -53,6 +36,13 @@
       color: #fff; cursor: pointer; transition: 0.2s;
     }
     .btn:active { transform: scale(0.97); background: #cc0000; }
+
+    .waktu-sistem {
+      background: #111; padding: 10px; border-radius: 10px; text-align: center;
+      margin-bottom: 10px; border: 1px solid #222;
+    }
+    .waktu-jam { font-size: 22px; font-weight: bold; color: #10b981; font-family: monospace; }
+    .waktu-tgl { font-size: 12px; color: #aaa; margin-top: 2px; }
 
     .notifikasi {
       background: #1a2f1a; border: 1px solid #10b981; border-radius: 10px;
@@ -85,37 +75,6 @@
     .stat-tahunan .stat-angka { color: #ec4899; }
     .stat-label { font-size: 9px; color: #888; margin-top: 2px; }
 
-    .pencarian { margin: 10px 0; }
-    .pencarian input { margin-bottom: 0; border-color: #ff0000; }
-
-    .tombol-aksi {
-      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 10px 0;
-    }
-    .btn-salin-semua {
-      background: #6366f1; border: none; color: #fff; padding: 10px;
-      border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;
-    }
-    .btn-salin-terlihat {
-      background: #8b5cf6; border: none; color: #fff; padding: 10px;
-      border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;
-    }
-    .btn-kirim-wa {
-      background: #25d366; border: none; color: #fff; padding: 10px;
-      border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;
-    }
-    .btn-salin-semua:active, .btn-salin-terlihat:active, .btn-kirim-wa:active { 
-      transform: scale(0.97); 
-    }
-
-    .status { 
-      text-align: center; font-size: 12px; margin: 4px 0 8px; 
-      padding: 8px; border-radius: 8px; font-weight: bold;
-      transition: all 0.3s ease;
-    }
-    .status.terhubung { background: #0f2e1f; color: #10b981; border: 1px solid #10b981; }
-    .status.memuat    { background: #2e2b0f; color: #f59e0b; border: 1px solid #f59e0b; }
-    .status.terputus  { background: #2e0f0f; color: #ef4444; border: 1px solid #ef4444; }
-    
     .menu { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
     .tab-btn {
       padding: 10px 6px; font-size: 12px; font-weight: bold;
@@ -129,36 +88,21 @@
     }
     .refresh:active { background: #0ea874; }
 
-    /* === KOTAK TABEL — BISA GESER KIRI-KANAN === */
-    .pembungkus-tabel {
-      overflow-x: auto; /* ✅ BISA GESER SAMPING */
-      -webkit-overflow-scrolling: touch; /* Halus di HP */
-      border: 1px solid #222; border-radius: 10px;
-      width: 100%;
-    }
-    .pembungkus-tabel::-webkit-scrollbar {
-      height: 6px;
-    }
-    .pembungkus-tabel::-webkit-scrollbar-thumb {
-      background: #444; border-radius: 3px;
-    }
-
-    .tabel-header, .baris {
-      display: grid;
-      grid-template-columns: 100px 140px 140px 100px 140px; /* ✅ Lebar tambah buat WAKTU */
-      gap: 8px; padding: 10px 8px;
-      align-items: center; min-width: 720px; /* Penting: biar bisa digeser */
-    }
+    .judul { text-align: center; font-size: 20px; font-weight: bold; margin: 8px 0; }
+    .status { text-align: center; font-size: 11px; margin: 4px 0 8px; color: #0f0; }
+    .status.salah { color: #f44; }
+    
     .tabel-header {
-      font-weight: bold; font-size: 11px; color: #aaa;
+      display: grid; grid-template-columns: 1fr 1fr 1fr 140px; gap: 4px;
+      padding: 8px 6px; font-weight: bold; font-size: 10px; color: #aaa;
       border-bottom: 2px solid #333;
-      background: #111;
     }
-    .daftar { max-height: 350px; overflow-y: auto; }
+    .daftar { max-height: 400px; overflow-y: auto; border: 1px solid #222; border-radius: 10px; }
     
     .baris {
-      border-bottom: 1px solid #222;
-      font-size: 11px; cursor: pointer; transition: 0.2s;
+      display: grid; grid-template-columns: 1fr 1fr 1fr 140px; gap: 4px;
+      padding: 8px 6px; border-bottom: 1px solid #222;
+      font-size: 10px; align-items: center; cursor: pointer; transition: 0.2s;
     }
     .baris:hover { background: #1a1a1a; }
     .baris:last-child { border-bottom: none; }
@@ -167,39 +111,26 @@
     .plat { color: #10b981; font-weight: bold; font-family: monospace; }
     .rangka { color: #f59e0b; }
     .mesin { color: #6366f1; }
-    .iduser { color: #e0e0e0; font-size: 10px; }
-    .iduser.aktif { color: #10b981; }
-    .iduser.tidak-aktif { color: #ef4444; }
-    .waktu { color: #666; font-size: 10px; line-height: 1.4; font-family: monospace; }
+    .waktu { color: #666; font-size: 9px; line-height: 1.4; white-space: pre-line; }
     
     .kosong { text-align: center; padding: 40px 20px; color: #555; font-size: 13px; }
     .info-bawah { text-align: center; font-size: 10px; color: #444; margin-top: 8px; }
-    
-    .tombol-keluar {
-      position: fixed; bottom: 12px; right: 12px;
-      background: #222; color: #ff6666; border: 1px solid #ff3333;
-      padding: 10px 16px; border-radius: 10px; font-weight: bold;
-      cursor: pointer; z-index: 900; transition: 0.2s;
-    }
-    .tombol-keluar:active { background: #ff3333; color: #fff; }
-
     .sembunyi { display: none !important; }
 
     .latar {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.92); z-index: 999; display: flex; align-items: center; justify-content: center;
-      padding: 15px; overflow-x: hidden;
+      padding: 15px;
     }
     .modal {
       background: #111; border-radius: 14px; padding: 20px; max-width: 520px; width: 100%;
       border: 1px solid #333; max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column;
-      overflow-x: hidden;
     }
     .tutup-baris { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
     .btn-tutup { background: #333; border: none; color: #fff; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
     .modal-judul { font-size: 16px; font-weight: bold; }
-    .isi { font-size: 13px; line-height: 1.8; margin: 10px 0; flex: 1; white-space: pre-line; }
-    .dtl { padding: 6px 0; border-bottom: 1px solid #222; }
+    .isi { font-size: 12px; line-height: 1.8; margin: 10px 0; flex: 1; }
+    .dtl { padding: 4px 0; border-bottom: 1px solid #222; }
     .lbl { color: #888; display: inline-block; min-width: 140px; font-weight: bold; }
     
     .btn-wa-bawah {
@@ -215,9 +146,9 @@
 
   <div id="layarMasuk" class="layar-masuk">
     <div class="logo">
-      <span class="judul-putih">PUSAT KONTROL</span> <span class="judul-merah">DATABASE</span>
+      <span class="db-putih">PUSAT KONTROL</span> <span class="ip-merah">DATABASE</span>
     </div>
-    <p class="sub">Real-Time • Kontrol Sumber Data • Pantau Siapa Mencari</p>
+    <p class="sub">Data Real-Time • Kirim WhatsApp</p>
     <div class="kotak-masuk">
       <input type="password" id="kunci" placeholder="Masukkan Kunci Akses">
       <button class="btn" onclick="masuk()">MASUK</button>
@@ -225,15 +156,13 @@
   </div>
 
   <div id="lap" class="sembunyi">
-    <div class="baris-atas">
-      <div class="bagian-kiri">
-        <div class="judul-putih">🖥 PUSAT KONTROL <span class="judul-merah">DATABASE</span></div>
-        <div class="total-data">TOTAL DATA: <span class="total-angka" id="totalAngka">0</span></div>
-      </div>
-      <div class="waktu-kanan">
-        <div class="jam-atas" id="jamSistem">00:00:00</div>
-        <div class="tgl-atas" id="tglSistem">Selasa, 06 Oktober 2026</div>
-      </div>
+    <h1 class="judul">
+      <span class="db-putih">🖥 PUSAT KONTROL</span> <span class="ip-merah">DATABASE</span>
+    </h1>
+    
+    <div class="waktu-sistem">
+      <div class="waktu-jam" id="jamSistem">00:00:00</div>
+      <div class="waktu-tgl" id="tglSistem">Senin, 05 Oktober 2026</div>
     </div>
 
     <div class="notifikasi" id="kotakNotif">
@@ -260,18 +189,8 @@
       </div>
     </div>
 
-    <div class="pencarian">
-      <input type="text" id="kotakCari" placeholder="🔍 Filter: Nopol / Noka / Nosin / Nama..." oninput="filterCari()">
-    </div>
-
-    <div class="tombol-aksi">
-      <button class="btn-salin-semua" onclick="salinSemua()">📋 SALIN SEMUA</button>
-      <button class="btn-salin-terlihat" onclick="salinTerlihat()">📄 SALIN TAMPIL</button>
-      <button class="btn-kirim-wa" onclick="kirimSemuaKeWA()">📲 KIRIM KE WA</button>
-    </div>
-
-    <p class="status memuat" id="status">🟡 MENYAMBUNGKAN KE SERVER...</p>
-    <button class="refresh" onclick="muatUlang()">🔄 REFRESH DATABASE</button>
+    <p class="status" id="status">🔄 Menghubungkan...</p>
+    <button class="refresh" onclick="muatUlang()">🔄 REFRESH DATA</button>
 
     <div class="menu">
       <button class="tab-btn aktif" id="tHari" onclick="buka('hari')">HARI INI</button>
@@ -279,64 +198,33 @@
       <button class="tab-btn" id="tSemua" onclick="buka('semua')">SEMUA DATA</button>
     </div>
 
-    <!-- ✅ TABEL BISA GESER KIRI-KANAN -->
-    <div class="pembungkus-tabel">
-      <div class="tabel-header">
-        <div>🚗 NOPOL</div>
-        <div>🔶 NOKA</div>
-        <div>🔷 NOSIN</div>
-        <div>👤 ID USER</div>
-        <div>🕐 WAKTU PENGECEKAN</div>
-      </div>
-      <div class="daftar" id="daftarUtama">
-        <div class="kosong">⏳ Memuat data...</div>
-      </div>
+    <div class="tabel-header">
+      <div>🚗 NOPOL</div>
+      <div>🔶 NOKA</div>
+      <div>🔷 NOSIN</div>
+      <div>🕐 WAKTU</div>
+    </div>
+    <div class="daftar" id="daftarUtama">
+      <div class="kosong">⏳ Memuat data...</div>
     </div>
 
-    <p class="info-bawah">👆 Geser tabel ke kiri/kanan untuk lihat semua kolom • Klik baris = detail lengkap</p>
-
-    <button class="tombol-keluar" onclick="keluar()">🚪 KELUAR</button>
+    <p class="info-bawah">👆 Klik baris untuk lihat detail & kirim ke WhatsApp</p>
   </div>
 
   <div id="modalLatar" class="latar sembunyi" onclick="if(event.target.id==='modalLatar') tutupDetail()">
     <div class="modal">
       <div class="tutup-baris">
-        <div class="modal-judul">📋 DETAIL DATA LENGKAP</div>
+        <div class="modal-judul">DETAIL DATA</div>
         <button class="btn-tutup" onclick="tutupDetail()">✕ Tutup</button>
       </div>
       <div class="isi" id="modalIsi"></div>
-      <button class="btn-wa-bawah" onclick="kirimWaDariModal()">📲 KIRIM KE WHATSAPP</button>
+      <button class="btn-wa-bawah" id="btnWaModal" onclick="kirimWaDariModal()">📲 KIRIM KE WHATSAPP</button>
     </div>
   </div>
 
 <script>
 const namaHari = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
 const namaBulan = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSySyBonuHp4nd-YZKWV5IM_2HRCfJ2TQ4zJaY",
-  authDomain: "gen-lang-client-0221970857.firebaseapp.com",
-  projectId: "gen-lang-client-0221970857",
-  storageBucket: "gen-lang-client-0221970857.firebasestorage.app",
-  messagingSenderId: "483674298302",
-  appId: "1:483674298302:web:8c6ccf111af4de7bbecbef"
-};
-
-if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-const db = firebase.firestore();
-
-const KUNCI_AKSES = "222222";
-
-function formatWaktuLengkap(ts) {
-  if (!ts) return "-";
-  const d = new Date(ts.seconds * 1000);
-  return `${namaHari[d.getDay()]}, ${String(d.getDate()).padStart(2,'0')} ${namaBulan[d.getMonth()]} ${d.getFullYear()}`;
-}
-function formatJamLengkap(ts) {
-  if (!ts) return "-";
-  const d = new Date(ts.seconds * 1000);
-  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
-}
 
 function perbaruiWaktuSistem() {
   const skrg = new Date();
@@ -348,6 +236,27 @@ function perbaruiWaktuSistem() {
 perbaruiWaktuSistem();
 setInterval(perbaruiWaktuSistem, 1000);
 
+// ✅ KONFIGURASI FIREBASE — SUDAH DIPERBAIKI
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSySyBonuHp4nd-YZKWV5IM_2HRCfJ2TQ4zJaY",
+  authDomain: "gen-lang-client-0221970857.firebaseapp.com",
+  projectId: "gen-lang-client-0221970857",
+  storageBucket: "gen-lang-client-0221970857.firebasestorage.app",
+  messagingSenderId: "483674298302",
+  appId: "1:483674298302:web:8c6ccf111af4de7bbecbef"
+};
+
+if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.firestore();
+let semuaData = [];
+let pengamat = null;
+let tabAktif = 'hari';
+let jumlahDataSebelum = 0;
+let docIdTerpilih = null;
+
+// 🔑 GANTI KUNCI DI SINI JIKA INGIN
+const KUNCI_AKSES = "222222";
+
 function masuk() {
   if (document.getElementById('kunci').value.trim() === KUNCI_AKSES) {
     document.getElementById('layarMasuk').classList.add('sembunyi');
@@ -358,29 +267,6 @@ function masuk() {
     document.getElementById('kunci').value = "";
   }
 }
-function keluar() {
-  if(confirm("Yakin ingin keluar?")) {
-    document.getElementById('lap').classList.add('sembunyi');
-    document.getElementById('layarMasuk').classList.remove('sembunyi');
-    document.getElementById('kunci').value = "";
-    if(pengamat) { pengamat(); pengamat = null; }
-    semuaData = [];
-    document.getElementById('daftarUtama').innerHTML = '<div class="kosong">⏳ Memuat data...</div>';
-    ubahStatus('memuat', '🟡 MENYAMBUNGKAN KE SERVER...');
-  }
-}
-
-function ubahStatus(jenis, teks) {
-  const el = document.getElementById('status');
-  el.className = `status ${jenis}`;
-  el.textContent = teks;
-}
-
-let semuaData = [];
-let pengamat = null;
-let tabAktif = 'hari';
-let jumlahDataSebelum = 0;
-let kataKunciCari = '';
 
 function hitungStatistik() {
   const skrg = new Date();
@@ -405,7 +291,6 @@ function hitungStatistik() {
   document.getElementById('jmlMinggu').textContent = minggu;
   document.getElementById('jmlBulan').textContent = bulan;
   document.getElementById('jmlTahun').textContent = tahun;
-  document.getElementById('totalAngka').textContent = semuaData.length;
 }
 
 function cekDataBaru() {
@@ -431,9 +316,7 @@ function dalam(timestamp, batas) {
 
 function ambilNilai(data, daftarKunci) {
   for (const k of daftarKunci) {
-    if (data[k] !== undefined && data[k] !== null && String(data[k]).trim() !== '') {
-      return String(data[k]).trim();
-    }
+    if (data[k] && String(data[k]).trim() !== '') return String(data[k]).trim().toUpperCase();
   }
   return "-";
 }
@@ -448,45 +331,89 @@ function ambilPlat(d) {
 }
 function ambilNoka(d) { return ambilNilai(d, ['Noka','no_rangka','rangka','NoRangka','NORANGKA']); }
 function ambilNosin(d) { return ambilNilai(d, ['Nosin','no_mesin','mesin','NoMesin','NOMESIN']); }
-function ambilIdUser(d) { return ambilNilai(d, ['id_pengguna','id_user','userId','pengguna_id']); }
-function cekStatusId(d) {
-  const status = String(d.status_id || d.status || 'aktif').toUpperCase();
-  if (status.includes('TIDAK') || status.includes('NONAKTIF') || status === 'FALSE') return 'tidak-aktif';
-  return 'aktif';
+
+function formatWaktu(ts) {
+  if (!ts) return "-";
+  const d = new Date(ts.seconds * 1000);
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} — ${namaHari[d.getDay()]}, ${d.getDate()} ${namaBulan[d.getMonth()]}`;
 }
 
+// ✅ FORMAT PESAN WA — SUDAH DIRAPIKAN
+function buatPesanWa(d) {
+  const plat = ambilPlat(d);
+  const noka = ambilNoka(d);
+  const nosin = ambilNosin(d);
+  const waktu = d.waktu_ditemukan ? formatWaktu(d.waktu_ditemukan) : "-";
+  
+  const kunciDikecualikan = [
+    'waktu_ditemukan','NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL',
+    'Noka','no_rangka','rangka','NoRangka','NORANGKA',
+    'Nosin','no_mesin','mesin','NoMesin','NOMESIN'
+  ];
+  
+  let rincian = '';
+  for (const [k, v] of Object.entries(d)) {
+    if (kunciDikecualikan.includes(k)) continue;
+    let nilai = v;
+    if (nilai === null || nilai === undefined || nilai === "" || nilai === "null") {
+      nilai = "-";
+    } else if (typeof nilai === 'object') {
+      nilai = JSON.stringify(nilai);
+    }
+    rincian += `• ${k.toUpperCase().padEnd(18,' ')}: ${nilai}\n`;
+  }
+  
+  return `DATABASE IP REAL-TIME
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚗 NOPOL   : ${plat}
+🔶 NOKA    : ${noka}
+🔷 NOSIN   : ${nosin}
+🕐 WAKTU   : ${waktu}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${rincian}Terima kasih..`;
+}
+
+function kirimWa(doc) {
+  const pesan = buatPesanWa(doc.data());
+  const url = `https://wa.me/?text=${encodeURIComponent(pesan)}`;
+  window.open(url, '_blank');
+}
+
+function kirimWaDariModal() {
+  if (!docIdTerpilih) return;
+  const doc = semuaData.find(d => d.id === docIdTerpilih);
+  if (!doc) return;
+  kirimWa(doc);
+}
+
+// ✅ MEMANTAU KOLEKSI "pencarian"
 function mulaiPantau() {
   if (pengamat) pengamat();
-  ubahStatus('memuat', '🟡 MENYAMBUNGKAN KE SERVER...');
   
   pengamat = db.collection('pencarian')
     .orderBy('waktu_ditemukan', 'desc')
     .limit(3000)
     .onSnapshot(snap => {
       semuaData = snap.docs;
-      ubahStatus('terhubung', `✅ TERHUBUNG — ${snap.size} data tersimpan`);
+      document.getElementById('status').textContent = `✅ TERHUBUNG — ${snap.size} data tersimpan`;
+      document.getElementById('status').className = 'status';
       
       hitungStatistik();
       cekDataBaru();
       tampil();
     }, err => {
-      ubahStatus('terputus', `❌ TERPUTUS — ${err.message}`);
+      document.getElementById('status').textContent = `⚠️ ${err.message}`;
+      document.getElementById('status').className = 'status salah';
     });
 }
 
 function muatUlang() {
   jumlahDataSebelum = 0;
-  kataKunciCari = '';
-  document.getElementById('kotakCari').value = '';
-  ubahStatus('memuat', '🟡 MEMUAT ULANG...');
   mulaiPantau();
+  document.getElementById('status').textContent = '🔄 Memuat ulang...';
 }
 
-function filterCari() {
-  kataKunciCari = document.getElementById('kotakCari').value.trim().toUpperCase();
-  tampil();
-}
-
+// ✅ FILTER SUDAH DIPERBAIKI
 function tampil() {
   let dataFilter = [...semuaData];
 
@@ -496,22 +423,9 @@ function tampil() {
     dataFilter = dataFilter.filter(d => dalam(d.data().waktu_ditemukan, mulaiMinggu()));
   }
 
-  if (kataKunciCari) {
-    dataFilter = dataFilter.filter(d => {
-      const dta = d.data();
-      const teks = [
-        ambilPlat(dta),
-        ambilNoka(dta),
-        ambilNosin(dta),
-        ambilIdUser(dta)
-      ].join(' ').toUpperCase();
-      return teks.includes(kataKunciCari);
-    });
-  }
-
   const el = document.getElementById('daftarUtama');
   if (!dataFilter.length) {
-    el.innerHTML = '<div class="kosong">Belum ada data yang cocok</div>';
+    el.innerHTML = '<div class="kosong">Belum ada data di periode ini</div>';
     return;
   }
 
@@ -522,10 +436,7 @@ function tampil() {
     const plat = ambilPlat(d);
     const noka = ambilNoka(d);
     const nosin = ambilNosin(d);
-    const idUser = ambilIdUser(d);
-    const statusKls = cekStatusId(d);
-    const tglLengkap = formatWaktuLengkap(d.waktu_ditemukan);
-    const jamLengkap = formatJamLengkap(d.waktu_ditemukan);
+    const waktu = formatWaktu(d.waktu_ditemukan);
     
     let kelasBaru = '';
     if (d.waktu_ditemukan && (d.waktu_ditemukan.seconds * 1000) > sepuluhMenitLalu) {
@@ -537,169 +448,30 @@ function tampil() {
         <div class="plat">${plat}</div>
         <div class="rangka">${noka}</div>
         <div class="mesin">${nosin}</div>
-        <div class="iduser ${statusKls}">${idUser}</div>
-        <div class="waktu">${jamLengkap}<br>${tglLengkap}</div>
+        <div class="waktu">${waktu}</div>
       </div>`;
   }).join('');
 }
-
-function ambilDataTertampil() {
-  let dataFilter = [...semuaData];
-  if (tabAktif === 'hari') {
-    dataFilter = dataFilter.filter(d => dalam(d.data().waktu_ditemukan, mulaiHari()));
-  } else if (tabAktif === 'minggu') {
-    dataFilter = dataFilter.filter(d => dalam(d.data().waktu_ditemukan, mulaiMinggu()));
-  }
-  if (kataKunciCari) {
-    dataFilter = dataFilter.filter(d => {
-      const dta = d.data();
-      const teks = [ambilPlat(dta), ambilNoka(dta), ambilNosin(dta), ambilIdUser(dta)].join(' ').toUpperCase();
-      return teks.includes(kataKunciCari);
-    });
-  }
-  return dataFilter;
-}
-
-function buatPesanWA(d) {
-  const tglLengkap = formatWaktuLengkap(d.waktu_ditemukan);
-  const jamLengkap = formatJamLengkap(d.waktu_ditemukan);
-
-  let pesan = `DATABASE IP REAL-TIME
-━━━━━━━━━━━━━━━━━━━━
-• NOPOL : ${ambilPlat(d)}
-• NOKA  : ${ambilNoka(d)}
-• NOSIN : ${ambilNosin(d)}
-• WAKTU : ${jamLengkap} — ${tglLengkap}
-━━━━━━━━━━━━━━━━━━━━
-`;
-
-  const urutanKunci = [
-    'SERI','EMAIL','NOKK','RW','NOPOL','MERK','KODEKABKOTA','NEGARA','NOSUT',
-    'NOPIB','KANTORBEACUKAI','ISICYLINDER','TANGGALPENGESAHAN','APM','SAMSAT',
-    'NOSTNK','NOTPT','NAMAKABKOTA','KODEPROVINSI','NAMABBM','SERIWILAYAH','RT',
-    'TANGGALSTNK','TAMBAHAN','JENISKENDARAAN','NOFAKTUR','ALAMAT','NAMAPOLDA',
-    'NOHP','TAHUNPEMBUATAN','KODEKEC','JUMLAHRODA','NOFORMABC','TANGGALFAKTUR',
-    'NAMAMODELKENDARAAN','NOKTP','NOBPKB','JUMLAHSUMBU','NAMAPEMILIK','PEKERJAAN',
-    'WARNA','KODEKEL','TYPE','TANGGALDAFTAR','NAMAPULAU','KODEPULAU','SINGKATANPOLDA',
-    'WARNATNKB','NAMAPROVINSI','TANGGALDAFTARPERTAMA'
-  ];
-
-  urutanKunci.forEach(kunci => {
-    let nilai = "-";
-    if (d[kunci] !== undefined && d[kunci] !== null && String(d[kunci]).trim() !== '') {
-      nilai = String(d[kunci]).trim();
-    }
-    pesan += `• ${kunci} : ${nilai}\n`;
-  });
-
-  pesan += `\nthank you.. 🤝`;
-  return pesan;
-}
-
-function buatPesanWASemua(daftarDoc) {
-  if (!daftarDoc.length) return "Tidak ada data";
-  
-  let pesan = `DATABASE IP REAL-TIME — ${daftarDoc.length} DATA\n\n`;
-  
-  daftarDoc.forEach((doc, i) => {
-    const d = doc.data();
-    pesan += `[${i+1}] ────────────────────────\n`;
-    pesan += `• NOPOL : ${ambilPlat(d)}\n`;
-    pesan += `• NOKA  : ${ambilNoka(d)}\n`;
-    pesan += `• NOSIN : ${ambilNosin(d)}\n`;
-    pesan += `• WAKTU : ${formatJamLengkap(d.waktu_ditemukan)} — ${formatWaktuLengkap(d.waktu_ditemukan)}\n`;
-    pesan += `────────────────────────────\n`;
-  });
-  
-  pesan += `\nthank you.. 🤝`;
-  return pesan;
-}
-
-async function salinSemua() {
-  if (!semuaData.length) { alert("Belum ada data!"); return; }
-  const teks = buatPesanWASemua(semuaData);
-  try {
-    await navigator.clipboard.writeText(teks);
-    alert(`✅ Tersalin! Total: ${semuaData.length} data`);
-  } catch {
-    const txt = document.createElement('textarea');
-    txt.value = teks;
-    document.body.appendChild(txt);
-    txt.select();
-    document.execCommand('copy');
-    document.body.removeChild(txt);
-    alert(`✅ Tersalin! Total: ${semuaData.length} data`);
-  }
-}
-
-async function salinTerlihat() {
-  const dataFilter = ambilDataTertampil();
-  if (!dataFilter.length) { alert("Tidak ada data yang tertampil!"); return; }
-  
-  const teks = buatPesanWASemua(dataFilter);
-  try {
-    await navigator.clipboard.writeText(teks);
-    alert(`✅ Tersalin! Total: ${dataFilter.length} data`);
-  } catch {
-    const txt = document.createElement('textarea');
-    txt.value = teks;
-    document.body.appendChild(txt);
-    txt.select();
-    document.execCommand('copy');
-    document.body.removeChild(txt);
-    alert(`✅ Tersalin! Total: ${dataFilter.length} data`);
-  }
-}
-
-function kirimSemuaKeWA() {
-  const dataFilter = ambilDataTertampil();
-  if (!dataFilter.length) { alert("Tidak ada data untuk dikirim!"); return; }
-  
-  const pesan = buatPesanWASemua(dataFilter);
-  window.open(`https://wa.me/?text=${encodeURIComponent(pesan)}`, '_blank');
-}
-
-let docIdTerpilih = null;
-let hasilSementaraUntukWA = null;
 
 function bukaDetail(id) {
   docIdTerpilih = id;
   const doc = semuaData.find(d => d.id === id);
   if (!doc) return;
   const d = doc.data();
-  hasilSementaraUntukWA = d;
   
   let html = '';
-  const urutanKunci = [
-    'NOPOL','NOKA','NOSIN','WAKTU','SERI','EMAIL','NOKK','RW','NOPOL','MERK','KODEKABKOTA',
-    'NEGARA','NOSUT','NOPIB','KANTORBEACUKAI','ISICYLINDER','TANGGALPENGESAHAN','APM','SAMSAT',
-    'NOSTNK','NOTPT','NAMAKABKOTA','KODEPROVINSI','NAMABBM','SERIWILAYAH','RT','TANGGALSTNK',
-    'TAMBAHAN','JENISKENDARAAN','NOFAKTUR','ALAMAT','NAMAPOLDA','NOHP','TAHUNPEMBUATAN','KODEKEC',
-    'JUMLAHRODA','NOFORMABC','TANGGALFAKTUR','NAMAMODELKENDARAAN','NOKTP','NOBPKB','JUMLAHSUMBU',
-    'NAMAPEMILIK','PEKERJAAN','WARNA','KODEKEL','TYPE','TANGGALDAFTAR','NAMAPULAU','KODEPULAU',
-    'SINGKATANPOLDA','WARNATNKB','NAMAPROVINSI','TANGGALDAFTARPERTAMA'
-  ];
-  
-  const nilaiSementara = {
-    NOPOL: ambilPlat(d),
-    NOKA: ambilNoka(d),
-    NOSIN: ambilNosin(d),
-    WAKTU: `${formatJamLengkap(d.waktu_ditemukan)} — ${formatWaktuLengkap(d.waktu_ditemukan)}`
-  };
-  
-  urutanKunci.forEach(kunci => {
-    let nilai = nilaiSementara[kunci];
-    if (nilai === undefined) {
-      nilai = (d[kunci] !== undefined && d[kunci] !== null && String(d[kunci]).trim() !== '') 
-        ? String(d[kunci]).trim() : "-";
+  for (const [k, v] of Object.entries(d)) {
+    let nilai = v;
+    if (nilai === null || nilai === undefined || nilai === "") {
+      nilai = "-";
+    } else if (typeof nilai === 'object') {
+      nilai = JSON.stringify(nilai, null, 2);
     }
-    html += `<div class="dtl"><span class="lbl">${kunci}</span>${nilai}</div>`;
-  });
-  
+    html += `<div class="dtl"><span class="lbl">${k.toUpperCase()}</span>${nilai}</div>`;
+  }
   document.getElementById('modalIsi').innerHTML = html;
   document.getElementById('modalLatar').classList.remove('sembunyi');
 }
-
 function tutupDetail() {
   document.getElementById('modalLatar').classList.add('sembunyi');
   docIdTerpilih = null;
@@ -710,12 +482,6 @@ function buka(nama) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('aktif'));
   document.getElementById(`t${nama[0].toUpperCase()}${nama.slice(1)}`).classList.add('aktif');
   tampil();
-}
-
-function kirimWaDariModal() {
-  if (!hasilSementaraUntukWA) return;
-  const pesan = buatPesanWA(hasilSementaraUntukWA);
-  window.open(`https://wa.me/?text=${encodeURIComponent(pesan)}`, '_blank');
 }
 </script>
 </body>
