@@ -7,13 +7,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
   <style>
-    * { 
-      box-sizing: border-box; 
-      margin: 0; 
-      padding: 0; 
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
-      overflow-x: hidden; /* 🔒 TIDAK BISA GESER KIRI-KANAN */
+      overflow-x: hidden; /* 🔒 Seluruh layar TIDAK bisa geser samping */
       position: relative;
       width: 100%;
     }
@@ -133,21 +129,36 @@
     }
     .refresh:active { background: #0ea874; }
 
-    .tabel-header {
-      display: grid; grid-template-columns: 90px 95px 95px 90px 115px; gap: 4px;
-      padding: 8px 4px; font-weight: bold; font-size: 9px; color: #aaa;
-      border-bottom: 2px solid #333;
-    }
-    .daftar { 
-      max-height: 350px; overflow-y: auto; 
+    /* === KOTAK TABEL — BISA GESER KIRI-KANAN === */
+    .pembungkus-tabel {
+      overflow-x: auto; /* ✅ BISA GESER SAMPING */
+      -webkit-overflow-scrolling: touch; /* Halus di HP */
       border: 1px solid #222; border-radius: 10px;
-      overflow-x: hidden; /* 🔒 Sembunyikan geser samping di daftar juga */
+      width: 100%;
     }
+    .pembungkus-tabel::-webkit-scrollbar {
+      height: 6px;
+    }
+    .pembungkus-tabel::-webkit-scrollbar-thumb {
+      background: #444; border-radius: 3px;
+    }
+
+    .tabel-header, .baris {
+      display: grid;
+      grid-template-columns: 100px 140px 140px 100px 140px; /* ✅ Lebar tambah buat WAKTU */
+      gap: 8px; padding: 10px 8px;
+      align-items: center; min-width: 720px; /* Penting: biar bisa digeser */
+    }
+    .tabel-header {
+      font-weight: bold; font-size: 11px; color: #aaa;
+      border-bottom: 2px solid #333;
+      background: #111;
+    }
+    .daftar { max-height: 350px; overflow-y: auto; }
     
     .baris {
-      display: grid; grid-template-columns: 90px 95px 95px 90px 115px; gap: 4px;
-      padding: 8px 4px; border-bottom: 1px solid #222;
-      font-size: 9px; align-items: center; cursor: pointer; transition: 0.2s;
+      border-bottom: 1px solid #222;
+      font-size: 11px; cursor: pointer; transition: 0.2s;
     }
     .baris:hover { background: #1a1a1a; }
     .baris:last-child { border-bottom: none; }
@@ -156,10 +167,10 @@
     .plat { color: #10b981; font-weight: bold; font-family: monospace; }
     .rangka { color: #f59e0b; }
     .mesin { color: #6366f1; }
-    .iduser { color: #e0e0e0; font-size: 8px; }
+    .iduser { color: #e0e0e0; font-size: 10px; }
     .iduser.aktif { color: #10b981; }
     .iduser.tidak-aktif { color: #ef4444; }
-    .waktu { color: #666; font-size: 7.5px; line-height: 1.4; font-family: monospace; }
+    .waktu { color: #666; font-size: 10px; line-height: 1.4; font-family: monospace; }
     
     .kosong { text-align: center; padding: 40px 20px; color: #555; font-size: 13px; }
     .info-bawah { text-align: center; font-size: 10px; color: #444; margin-top: 8px; }
@@ -250,7 +261,7 @@
     </div>
 
     <div class="pencarian">
-      <input type="text" id="kotakCari" placeholder="🔍 Filter Data: Nopol / Noka / Nosin / ID..." oninput="filterCari()">
+      <input type="text" id="kotakCari" placeholder="🔍 Filter: Nopol / Noka / Nosin / Nama..." oninput="filterCari()">
     </div>
 
     <div class="tombol-aksi">
@@ -268,18 +279,21 @@
       <button class="tab-btn" id="tSemua" onclick="buka('semua')">SEMUA DATA</button>
     </div>
 
-    <div class="tabel-header">
-      <div>🚗 NOPOL</div>
-      <div>🔶 NOKA</div>
-      <div>🔷 NOSIN</div>
-      <div>👤 ID USER</div>
-      <div>🕐 WAKTU</div>
-    </div>
-    <div class="daftar" id="daftarUtama">
-      <div class="kosong">⏳ Memuat data...</div>
+    <!-- ✅ TABEL BISA GESER KIRI-KANAN -->
+    <div class="pembungkus-tabel">
+      <div class="tabel-header">
+        <div>🚗 NOPOL</div>
+        <div>🔶 NOKA</div>
+        <div>🔷 NOSIN</div>
+        <div>👤 ID USER</div>
+        <div>🕐 WAKTU PENGECEKAN</div>
+      </div>
+      <div class="daftar" id="daftarUtama">
+        <div class="kosong">⏳ Memuat data...</div>
+      </div>
     </div>
 
-    <p class="info-bawah">👆 Klik baris lihat detail • ID Hijau=Aktif | Merah=Tidak Aktif</p>
+    <p class="info-bawah">👆 Geser tabel ke kiri/kanan untuk lihat semua kolom • Klik baris = detail lengkap</p>
 
     <button class="tombol-keluar" onclick="keluar()">🚪 KELUAR</button>
   </div>
@@ -291,7 +305,7 @@
         <button class="btn-tutup" onclick="tutupDetail()">✕ Tutup</button>
       </div>
       <div class="isi" id="modalIsi"></div>
-      <button class="btn-wa-bawah" id="btnWaModal" onclick="kirimWaDariModal()">📲 KIRIM KE WHATSAPP</button>
+      <button class="btn-wa-bawah" onclick="kirimWaDariModal()">📲 KIRIM KE WHATSAPP</button>
     </div>
   </div>
 
@@ -417,7 +431,9 @@ function dalam(timestamp, batas) {
 
 function ambilNilai(data, daftarKunci) {
   for (const k of daftarKunci) {
-    if (data[k] && String(data[k]).trim() !== '') return String(data[k]).trim().toUpperCase();
+    if (data[k] !== undefined && data[k] !== null && String(data[k]).trim() !== '') {
+      return String(data[k]).trim();
+    }
   }
   return "-";
 }
@@ -522,7 +538,7 @@ function tampil() {
         <div class="rangka">${noka}</div>
         <div class="mesin">${nosin}</div>
         <div class="iduser ${statusKls}">${idUser}</div>
-        <div class="waktu">${tglLengkap}<br>${jamLengkap}</div>
+        <div class="waktu">${jamLengkap}<br>${tglLengkap}</div>
       </div>`;
   }).join('');
 }
@@ -544,51 +560,64 @@ function ambilDataTertampil() {
   return dataFilter;
 }
 
-function buatPesanWA(daftarDoc) {
-  if (!daftarDoc.length) return "Tidak ada data";
-  
-  let teks = "📋 DATA PENCARIAN KENDARAAN\n";
-  teks += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-  teks += `TOTAL: ${daftarDoc.length} DATA\n\n`;
-  
-  daftarDoc.forEach((doc, i) => {
-    const d = doc.data();
-    teks += `${i+1}. ────────────────────────\n`;
-    teks += `🚗 NOPOL    : ${ambilPlat(d)}\n`;
-    teks += `🔶 NOKA     : ${ambilNoka(d)}\n`;
-    teks += `🔷 NOSIN    : ${ambilNosin(d)}\n`;
-    teks += `👤 DICARI OLEH: ${ambilIdUser(d)}\n`;
-    teks += `🕐 WAKTU    : ${formatWaktuLengkap(d.waktu_ditemukan)} ${formatJamLengkap(d.waktu_ditemukan)}\n`;
+function buatPesanWA(d) {
+  const tglLengkap = formatWaktuLengkap(d.waktu_ditemukan);
+  const jamLengkap = formatJamLengkap(d.waktu_ditemukan);
+
+  let pesan = `DATABASE IP REAL-TIME
+━━━━━━━━━━━━━━━━━━━━
+• NOPOL : ${ambilPlat(d)}
+• NOKA  : ${ambilNoka(d)}
+• NOSIN : ${ambilNosin(d)}
+• WAKTU : ${jamLengkap} — ${tglLengkap}
+━━━━━━━━━━━━━━━━━━━━
+`;
+
+  const urutanKunci = [
+    'SERI','EMAIL','NOKK','RW','NOPOL','MERK','KODEKABKOTA','NEGARA','NOSUT',
+    'NOPIB','KANTORBEACUKAI','ISICYLINDER','TANGGALPENGESAHAN','APM','SAMSAT',
+    'NOSTNK','NOTPT','NAMAKABKOTA','KODEPROVINSI','NAMABBM','SERIWILAYAH','RT',
+    'TANGGALSTNK','TAMBAHAN','JENISKENDARAAN','NOFAKTUR','ALAMAT','NAMAPOLDA',
+    'NOHP','TAHUNPEMBUATAN','KODEKEC','JUMLAHRODA','NOFORMABC','TANGGALFAKTUR',
+    'NAMAMODELKENDARAAN','NOKTP','NOBPKB','JUMLAHSUMBU','NAMAPEMILIK','PEKERJAAN',
+    'WARNA','KODEKEL','TYPE','TANGGALDAFTAR','NAMAPULAU','KODEPULAU','SINGKATANPOLDA',
+    'WARNATNKB','NAMAPROVINSI','TANGGALDAFTARPERTAMA'
+  ];
+
+  urutanKunci.forEach(kunci => {
+    let nilai = "-";
+    if (d[kunci] !== undefined && d[kunci] !== null && String(d[kunci]).trim() !== '') {
+      nilai = String(d[kunci]).trim();
+    }
+    pesan += `• ${kunci} : ${nilai}\n`;
   });
-  
-  teks += "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nTerima Kasih";
-  return teks;
+
+  pesan += `\nthank you.. 🤝`;
+  return pesan;
 }
 
-function ambilTeksDaftar(daftarDoc) {
+function buatPesanWASemua(daftarDoc) {
   if (!daftarDoc.length) return "Tidak ada data";
   
-  let teks = "📋 DATA PENCARIAN KENDARAAN\n";
-  teks += "=".repeat(50) + "\n";
-  teks += `TOTAL: ${daftarDoc.length} data\n\n`;
+  let pesan = `DATABASE IP REAL-TIME — ${daftarDoc.length} DATA\n\n`;
   
   daftarDoc.forEach((doc, i) => {
     const d = doc.data();
-    teks += `${i+1}. NOPOL : ${ambilPlat(d)}\n`;
-    teks += `   NOKA : ${ambilNoka(d)}\n`;
-    teks += `   NOSIN : ${ambilNosin(d)}\n`;
-    teks += `   DICARI OLEH : ${ambilIdUser(d)}\n`;
-    teks += `   WAKTU : ${formatWaktuLengkap(d.waktu_ditemukan)} ${formatJamLengkap(d.waktu_ditemukan)}\n`;
-    teks += "-".repeat(40) + "\n";
+    pesan += `[${i+1}] ────────────────────────\n`;
+    pesan += `• NOPOL : ${ambilPlat(d)}\n`;
+    pesan += `• NOKA  : ${ambilNoka(d)}\n`;
+    pesan += `• NOSIN : ${ambilNosin(d)}\n`;
+    pesan += `• WAKTU : ${formatJamLengkap(d.waktu_ditemukan)} — ${formatWaktuLengkap(d.waktu_ditemukan)}\n`;
+    pesan += `────────────────────────────\n`;
   });
   
-  teks += "\nTerima Kasih";
-  return teks;
+  pesan += `\nthank you.. 🤝`;
+  return pesan;
 }
 
 async function salinSemua() {
   if (!semuaData.length) { alert("Belum ada data!"); return; }
-  const teks = ambilTeksDaftar(semuaData);
+  const teks = buatPesanWASemua(semuaData);
   try {
     await navigator.clipboard.writeText(teks);
     alert(`✅ Tersalin! Total: ${semuaData.length} data`);
@@ -607,7 +636,7 @@ async function salinTerlihat() {
   const dataFilter = ambilDataTertampil();
   if (!dataFilter.length) { alert("Tidak ada data yang tertampil!"); return; }
   
-  const teks = ambilTeksDaftar(dataFilter);
+  const teks = buatPesanWASemua(dataFilter);
   try {
     await navigator.clipboard.writeText(teks);
     alert(`✅ Tersalin! Total: ${dataFilter.length} data`);
@@ -626,7 +655,7 @@ function kirimSemuaKeWA() {
   const dataFilter = ambilDataTertampil();
   if (!dataFilter.length) { alert("Tidak ada data untuk dikirim!"); return; }
   
-  const pesan = buatPesanWA(dataFilter);
+  const pesan = buatPesanWASemua(dataFilter);
   window.open(`https://wa.me/?text=${encodeURIComponent(pesan)}`, '_blank');
 }
 
@@ -640,39 +669,32 @@ function bukaDetail(id) {
   const d = doc.data();
   hasilSementaraUntukWA = d;
   
-  const idUser = ambilIdUser(d);
-  const statusId = cekStatusId(d) === 'aktif' ? '✅ AKTIF' : '❌ TIDAK AKTIF';
-  const tglLengkap = formatWaktuLengkap(d.waktu_ditemukan);
-  const jamLengkap = formatJamLengkap(d.waktu_ditemukan);
-  
-  let html = `
-    <div class="dtl"><span class="lbl">🕐 WAKTU PENGECEKAN</span></div>
-    <div class="dtl"><span class="lbl">• TANGGAL</span>${tglLengkap}</div>
-    <div class="dtl"><span class="lbl">• JAM</span>${jamLengkap}</div>
-    <div class="dtl"><span class="lbl">🚗 NOPOL</span>${ambilPlat(d)}</div>
-    <div class="dtl"><span class="lbl">🔶 NOKA</span>${ambilNoka(d)}</div>
-    <div class="dtl"><span class="lbl">🔷 NOSIN</span>${ambilNosin(d)}</div>
-    <div class="dtl"><span class="lbl">👤 DICARI OLEH</span>${idUser}</div>
-    <div class="dtl"><span class="lbl">📊 STATUS ID</span>${statusId}</div>
-  `;
-  
-  const kunciDikecualikan = [
-    'NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL',
-    'Noka','no_rangka','rangka','NoRangka','NORANGKA',
-    'Nosin','no_mesin','mesin','NoMesin','NOMESIN',
-    'id_pengguna','id_user','userId','pengguna_id','status_id','status','waktu_ditemukan'
+  let html = '';
+  const urutanKunci = [
+    'NOPOL','NOKA','NOSIN','WAKTU','SERI','EMAIL','NOKK','RW','NOPOL','MERK','KODEKABKOTA',
+    'NEGARA','NOSUT','NOPIB','KANTORBEACUKAI','ISICYLINDER','TANGGALPENGESAHAN','APM','SAMSAT',
+    'NOSTNK','NOTPT','NAMAKABKOTA','KODEPROVINSI','NAMABBM','SERIWILAYAH','RT','TANGGALSTNK',
+    'TAMBAHAN','JENISKENDARAAN','NOFAKTUR','ALAMAT','NAMAPOLDA','NOHP','TAHUNPEMBUATAN','KODEKEC',
+    'JUMLAHRODA','NOFORMABC','TANGGALFAKTUR','NAMAMODELKENDARAAN','NOKTP','NOBPKB','JUMLAHSUMBU',
+    'NAMAPEMILIK','PEKERJAAN','WARNA','KODEKEL','TYPE','TANGGALDAFTAR','NAMAPULAU','KODEPULAU',
+    'SINGKATANPOLDA','WARNATNKB','NAMAPROVINSI','TANGGALDAFTARPERTAMA'
   ];
   
-  for (const [k, v] of Object.entries(d)) {
-    if (kunciDikecualikan.includes(k)) continue;
-    let nilai = v;
-    if (nilai === null || nilai === undefined || nilai === "") {
-      nilai = "-";
-    } else if (typeof nilai === 'object') {
-      nilai = JSON.stringify(nilai, null, 2);
+  const nilaiSementara = {
+    NOPOL: ambilPlat(d),
+    NOKA: ambilNoka(d),
+    NOSIN: ambilNosin(d),
+    WAKTU: `${formatJamLengkap(d.waktu_ditemukan)} — ${formatWaktuLengkap(d.waktu_ditemukan)}`
+  };
+  
+  urutanKunci.forEach(kunci => {
+    let nilai = nilaiSementara[kunci];
+    if (nilai === undefined) {
+      nilai = (d[kunci] !== undefined && d[kunci] !== null && String(d[kunci]).trim() !== '') 
+        ? String(d[kunci]).trim() : "-";
     }
-    html += `<div class="dtl"><span class="lbl">${k.toUpperCase()}</span>${nilai}</div>`;
-  }
+    html += `<div class="dtl"><span class="lbl">${kunci}</span>${nilai}</div>`;
+  });
   
   document.getElementById('modalIsi').innerHTML = html;
   document.getElementById('modalLatar').classList.remove('sembunyi');
@@ -691,59 +713,8 @@ function buka(nama) {
 }
 
 function kirimWaDariModal() {
-  const d = hasilSementaraUntukWA;
-  if (!d) return;
-
-  const ambil = (kunci) => {
-    for (const k of [].concat(kunci)) {
-      if (d[k] && String(d[k]).trim() !== '') return String(d[k]).trim();
-    }
-    return "-";
-  };
-
-  const nopol = ambil(['NopolServer','nopol','plat','NO_POL','NoPlat']);
-  const nama = ambil(['Nama','nama_pemilik','pemilik']);
-  const nik = ambil(['NIK','nik','no_ktp']);
-  const alamat = ambil(['Alamat','alamat','alamat_pemilik']);
-  const merk = ambil(['Merk','merk','merek']);
-  const tipe = ambil(['Tipe','tipe']);
-  const tahun = ambil(['Tahun','tahun','tahun_pembuatan']);
-  const warna = ambil(['Warna','warna']);
-  const bbm = ambil(['BBM','BahanBakar','jenis_bbm','bahan_bakar']);
-  const cc = ambil(['CC','Silinder','kapasitas_mesin']);
-  const noka = ambil(['Noka','no_rangka','rangka']);
-  const nosin = ambil(['Nosin','no_mesin','mesin']);
-  const idUser = ambil(['id_pengguna','id_user','userId','pengguna_id']);
-  const statusId = cekStatusId(d) === 'aktif' ? '✅ AKTIF' : '❌ TIDAK AKTIF';
-  const tglLengkap = formatWaktuLengkap(d.waktu_ditemukan);
-  const jamLengkap = formatJamLengkap(d.waktu_ditemukan);
-
-  const pesan = `_____
-🕐 WAKTU PENGECEKAN:
-• TANGGAL : ${tglLengkap}
-• JAM     : ${jamLengkap}
-
-👤 IDENTITAS PEMILIK:
-• NAMA     : ${nama}
-• NIK      : ${nik}
-• ALAMAT   : ${alamat}
-• DICARI OLEH: ${idUser}
-• STATUS ID : ${statusId}
-
-🚗 DATA KENDARAAN:
-• NO.PLAT  : ${nopol}
-• MEREK    : ${merk}
-• TIPE     : ${tipe}
-• TAHUN    : ${tahun}
-• WARNA    : ${warna}
-• BAHAN BAKAR: ${bbm}
-• CC       : ${cc}
-• NOKA/RANGKA: ${noka}
-• NOSIN/MESIN: ${nosin}
-_______________________
-
-Terima Kasih`;
-
+  if (!hasilSementaraUntukWA) return;
+  const pesan = buatPesanWA(hasilSementaraUntukWA);
   window.open(`https://wa.me/?text=${encodeURIComponent(pesan)}`, '_blank');
 }
 </script>
