@@ -1,18 +1,27 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>PUSAT KONTROL — DATABASE REAL-TIME</title>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+    }
+    html, body {
+      overflow-x: hidden; /* 🔒 TIDAK BISA GESER KIRI-KANAN */
+      position: relative;
+      width: 100%;
+    }
     body { 
       font-family: 'Arial', sans-serif; 
       background: #000; color: #fff; 
-      padding: 12px; max-width: 780px; margin: 0 auto; min-height: 100vh;
-      padding-bottom: 70px;
+      padding: 12px; max-width: 100%; margin: 0 auto; min-height: 100vh;
+      padding-bottom: 80px;
     }
 
     .baris-atas {
@@ -84,17 +93,23 @@
     .pencarian input { margin-bottom: 0; border-color: #ff0000; }
 
     .tombol-aksi {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0;
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 10px 0;
     }
     .btn-salin-semua {
       background: #6366f1; border: none; color: #fff; padding: 10px;
-      border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;
+      border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;
     }
     .btn-salin-terlihat {
       background: #8b5cf6; border: none; color: #fff; padding: 10px;
-      border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;
+      border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;
     }
-    .btn-salin-semua:active, .btn-salin-terlihat:active { transform: scale(0.97); }
+    .btn-kirim-wa {
+      background: #25d366; border: none; color: #fff; padding: 10px;
+      border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;
+    }
+    .btn-salin-semua:active, .btn-salin-terlihat:active, .btn-kirim-wa:active { 
+      transform: scale(0.97); 
+    }
 
     .status { 
       text-align: center; font-size: 12px; margin: 4px 0 8px; 
@@ -123,7 +138,11 @@
       padding: 8px 4px; font-weight: bold; font-size: 9px; color: #aaa;
       border-bottom: 2px solid #333;
     }
-    .daftar { max-height: 350px; overflow-y: auto; border: 1px solid #222; border-radius: 10px; }
+    .daftar { 
+      max-height: 350px; overflow-y: auto; 
+      border: 1px solid #222; border-radius: 10px;
+      overflow-x: hidden; /* 🔒 Sembunyikan geser samping di daftar juga */
+    }
     
     .baris {
       display: grid; grid-template-columns: 90px 95px 95px 90px 115px; gap: 4px;
@@ -158,11 +177,12 @@
     .latar {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.92); z-index: 999; display: flex; align-items: center; justify-content: center;
-      padding: 15px;
+      padding: 15px; overflow-x: hidden;
     }
     .modal {
       background: #111; border-radius: 14px; padding: 20px; max-width: 520px; width: 100%;
       border: 1px solid #333; max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column;
+      overflow-x: hidden;
     }
     .tutup-baris { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
     .btn-tutup { background: #333; border: none; color: #fff; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
@@ -234,8 +254,9 @@
     </div>
 
     <div class="tombol-aksi">
-      <button class="btn-salin-semua" onclick="salinSemua()">📋 SALIN SEMUA DATA</button>
-      <button class="btn-salin-terlihat" onclick="salinTerlihat()">📄 SALIN YANG TERTAMPIL</button>
+      <button class="btn-salin-semua" onclick="salinSemua()">📋 SALIN SEMUA</button>
+      <button class="btn-salin-terlihat" onclick="salinTerlihat()">📄 SALIN TAMPIL</button>
+      <button class="btn-kirim-wa" onclick="kirimSemuaKeWA()">📲 KIRIM KE WA</button>
     </div>
 
     <p class="status memuat" id="status">🟡 MENYAMBUNGKAN KE SERVER...</p>
@@ -252,13 +273,13 @@
       <div>🔶 NOKA</div>
       <div>🔷 NOSIN</div>
       <div>👤 ID USER</div>
-      <div>🕐 WAKTU DITEMUKAN</div>
+      <div>🕐 WAKTU</div>
     </div>
     <div class="daftar" id="daftarUtama">
       <div class="kosong">⏳ Memuat data...</div>
     </div>
 
-    <p class="info-bawah">👆 Klik baris untuk lihat detail lengkap • ID Hijau=Aktif | Merah=Tidak Aktif</p>
+    <p class="info-bawah">👆 Klik baris lihat detail • ID Hijau=Aktif | Merah=Tidak Aktif</p>
 
     <button class="tombol-keluar" onclick="keluar()">🚪 KELUAR</button>
   </div>
@@ -506,6 +527,44 @@ function tampil() {
   }).join('');
 }
 
+function ambilDataTertampil() {
+  let dataFilter = [...semuaData];
+  if (tabAktif === 'hari') {
+    dataFilter = dataFilter.filter(d => dalam(d.data().waktu_ditemukan, mulaiHari()));
+  } else if (tabAktif === 'minggu') {
+    dataFilter = dataFilter.filter(d => dalam(d.data().waktu_ditemukan, mulaiMinggu()));
+  }
+  if (kataKunciCari) {
+    dataFilter = dataFilter.filter(d => {
+      const dta = d.data();
+      const teks = [ambilPlat(dta), ambilNoka(dta), ambilNosin(dta), ambilIdUser(dta)].join(' ').toUpperCase();
+      return teks.includes(kataKunciCari);
+    });
+  }
+  return dataFilter;
+}
+
+function buatPesanWA(daftarDoc) {
+  if (!daftarDoc.length) return "Tidak ada data";
+  
+  let teks = "📋 DATA PENCARIAN KENDARAAN\n";
+  teks += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+  teks += `TOTAL: ${daftarDoc.length} DATA\n\n`;
+  
+  daftarDoc.forEach((doc, i) => {
+    const d = doc.data();
+    teks += `${i+1}. ────────────────────────\n`;
+    teks += `🚗 NOPOL    : ${ambilPlat(d)}\n`;
+    teks += `🔶 NOKA     : ${ambilNoka(d)}\n`;
+    teks += `🔷 NOSIN    : ${ambilNosin(d)}\n`;
+    teks += `👤 DICARI OLEH: ${ambilIdUser(d)}\n`;
+    teks += `🕐 WAKTU    : ${formatWaktuLengkap(d.waktu_ditemukan)} ${formatJamLengkap(d.waktu_ditemukan)}\n`;
+  });
+  
+  teks += "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nTerima Kasih";
+  return teks;
+}
+
 function ambilTeksDaftar(daftarDoc) {
   if (!daftarDoc.length) return "Tidak ada data";
   
@@ -545,19 +604,7 @@ async function salinSemua() {
 }
 
 async function salinTerlihat() {
-  let dataFilter = [...semuaData];
-  if (tabAktif === 'hari') {
-    dataFilter = dataFilter.filter(d => dalam(d.data().waktu_ditemukan, mulaiHari()));
-  } else if (tabAktif === 'minggu') {
-    dataFilter = dataFilter.filter(d => dalam(d.data().waktu_ditemukan, mulaiMinggu()));
-  }
-  if (kataKunciCari) {
-    dataFilter = dataFilter.filter(d => {
-      const dta = d.data();
-      const teks = [ambilPlat(dta), ambilNoka(dta), ambilNosin(dta), ambilIdUser(dta)].join(' ').toUpperCase();
-      return teks.includes(kataKunciCari);
-    });
-  }
+  const dataFilter = ambilDataTertampil();
   if (!dataFilter.length) { alert("Tidak ada data yang tertampil!"); return; }
   
   const teks = ambilTeksDaftar(dataFilter);
@@ -573,6 +620,14 @@ async function salinTerlihat() {
     document.body.removeChild(txt);
     alert(`✅ Tersalin! Total: ${dataFilter.length} data`);
   }
+}
+
+function kirimSemuaKeWA() {
+  const dataFilter = ambilDataTertampil();
+  if (!dataFilter.length) { alert("Tidak ada data untuk dikirim!"); return; }
+  
+  const pesan = buatPesanWA(dataFilter);
+  window.open(`https://wa.me/?text=${encodeURIComponent(pesan)}`, '_blank');
 }
 
 let docIdTerpilih = null;
