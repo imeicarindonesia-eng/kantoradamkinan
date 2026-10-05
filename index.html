@@ -718,7 +718,7 @@ function kirimWaDariModal() {
   const tglLengkap = formatWaktuLengkap(d.waktu_ditemukan);
   const jamLengkap = formatJamLengkap(d.waktu_ditemukan);
 
-  const pesan = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const pesan = `_____
 🕐 WAKTU PENGECEKAN:
 • TANGGAL : ${tglLengkap}
 • JAM     : ${jamLengkap}
@@ -740,7 +740,8 @@ function kirimWaDariModal() {
 • CC       : ${cc}
 • NOKA/RANGKA: ${noka}
 • NOSIN/MESIN: ${nosin}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+_______________________
+
 Terima Kasih`;
 
   window.open(`https://wa.me/?text=${encodeURIComponent(pesan)}`, '_blank');
