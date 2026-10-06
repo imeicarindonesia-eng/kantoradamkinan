@@ -208,25 +208,23 @@
 
       <!-- Header & System Clock -->
       <div class="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-2 border-slate-800 shadow-2xl">
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-xl bg-red-950 border-2 border-red-500 text-red-400 flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-900/50">
-            <i class="fa-solid fa-database text-2xl"></i>
-          </div>
-          <div>
-            <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
-              <span>PUSAT KONTROL</span>
-              <span class="text-red-500 drop-shadow-[0_0_10px_rgba(255,34,51,0.6)]">DATABASE</span>
-            </h1>
-            <p class="text-xs text-slate-300 font-medium flex items-center gap-1.5">
-              <span id="indicatorDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-              <span id="statusText" class="text-slate-300 font-semibold">🔄 Menghubungkan ke server...</span>
-            </p>
-            <!-- Badge User ID Pengguna Aktif -->
-            <div class="mt-1 flex items-center gap-2 text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/80 px-2.5 py-0.5 rounded-md w-fit">
-              <i class="fa-solid fa-id-badge text-cyan-400"></i>
-              <span>USER ID:</span>
-              <span id="badgeUserIdDisplay" class="font-bold select-all">MEMUAT AUTH...</span>
+        <div class="flex items-center justify-between w-full md:w-auto gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-red-950 border-2 border-red-500 text-red-400 flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-900/50">
+              <i class="fa-solid fa-database text-2xl"></i>
             </div>
+            <div>
+              <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                <span>PUSAT KONTROL</span>
+                <span class="text-red-500 drop-shadow-[0_0_10px_rgba(255,34,51,0.6)]">DATABASE</span>
+              </h1>
+            </div>
+          </div>
+
+          <!-- Status Terhubung di Pojok Kanan Atas Header (Sejajar Judul Utama) -->
+          <div class="flex items-center gap-1.5 bg-black/80 px-3 py-1.5 rounded-xl border border-slate-800 text-xs text-slate-300 font-semibold">
+            <span id="indicatorDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <span id="statusText" class="font-mono text-[11px] sm:text-xs">🔄 Menghubungkan ke server...</span>
           </div>
         </div>
 
@@ -307,53 +305,6 @@
             </button>
           </div>
         </div>
-      </div>
-
-      <!-- TACTICAL MODULE SUB-NAVIGATION MENU BAR -->
-      <div class="glass-panel p-2 rounded-xl border-2 border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs font-bold no-print">
-        <div class="flex flex-wrap items-center gap-1">
-          <button 
-            id="navTabUtama" 
-            onclick="gantiModul('utama')" 
-            class="py-2 px-3.5 bg-red-600 text-white rounded-lg transition flex items-center gap-2 shadow-md shadow-red-950"
-          >
-            <i class="fa-solid fa-table-list text-xs"></i>
-            <span>DASBOR UTAMA</span>
-          </button>
-          <button 
-            id="navTabAnalitik" 
-            onclick="gantiModul('analitik')" 
-            class="py-2 px-3.5 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition flex items-center gap-2 border border-slate-800"
-          >
-            <i class="fa-solid fa-chart-column text-xs text-cyan-400"></i>
-            <span>GRAFIK JAM SIBUK</span>
-          </button>
-          <button 
-            id="navTabMemo" 
-            onclick="gantiModul('memo')" 
-            class="py-2 px-3.5 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition flex items-center gap-2 border border-slate-800 relative"
-          >
-            <i class="fa-solid fa-clipboard-list text-xs text-amber-400"></i>
-            <span>CATATAN POSKO</span>
-            <span id="badgeMemo" class="hidden w-2 h-2 rounded-full bg-amber-400"></span>
-          </button>
-          <button 
-            id="navTabRanmor" 
-            onclick="gantiModul('ranmor')" 
-            class="py-2 px-3.5 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition flex items-center gap-2 border border-slate-800"
-          >
-            <i class="fa-solid fa-magnifying-glass-location text-xs text-emerald-400"></i>
-            <span>CEK PAJAK & RANMOR</span>
-          </button>
-        </div>
-
-        <button 
-          onclick="bukaModalImport()" 
-          class="py-2 px-3 bg-slate-900 hover:bg-slate-800 text-indigo-300 border border-indigo-900 hover:border-indigo-600 rounded-lg transition flex items-center gap-1.5 ml-auto"
-        >
-          <i class="fa-solid fa-file-import text-indigo-400"></i>
-          <span>IMPORT BULK CSV</span>
-        </button>
       </div>
 
       <!-- MODUL UTAMA DASHBOARD -->
@@ -1514,7 +1465,6 @@
                   </div>
                   <div class="text-[10px] text-slate-400 font-sans font-semibold flex items-center gap-1.5 flex-wrap mt-0.5">
                     <span><i class="fa-solid fa-location-dot text-[9px] text-red-400"></i> ${wilayah}</span>
-                    <span class="text-cyan-400 bg-cyan-950/80 px-1.5 py-0.2 rounded border border-cyan-800/60 font-mono text-[9px]"><i class="fa-solid fa-user-check text-[8px]"></i> ID: ${userPengecek}</span>
                   </div>
                 </div>
               </div>
@@ -1545,18 +1495,13 @@
       
       const d = doc.data();
       const isPinned = pinnedIds.includes(id);
-      const userPengecek = ambilUserPengecek(d);
 
       const iconStarModal = document.getElementById('iconStarModal');
       if (iconStarModal) iconStarModal.className = isPinned ? 'fa-solid fa-star text-amber-400 text-base' : 'fa-regular fa-star text-base';
 
       let html = `
         <div class="mb-3 p-3 bg-cyan-950/50 rounded-xl border border-cyan-700/60 space-y-1">
-          <div class="flex items-center justify-between text-[10px] text-cyan-300 font-sans font-bold">
-            <span><i class="fa-solid fa-user-shield"></i> PETUGAS PENGECEK / OPERATOR:</span>
-            <span class="bg-cyan-900/90 text-white px-2 py-0.5 rounded font-mono font-black">${userPengecek}</span>
-          </div>
-          <div class="text-[10px] text-slate-500 font-sans font-bold pt-1 border-t border-cyan-900/40">DOKUMEN ID FIRESTORE:</div>
+          <div class="text-[10px] text-slate-500 font-sans font-bold pt-1">DOKUMEN ID FIRESTORE:</div>
           <div class="text-xs text-red-400 font-mono font-bold select-all break-all">${id}</div>
         </div>
       `;
