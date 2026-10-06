@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DATABASE IP REAL-TIME - PUSAT KONTROL V3.8</title>
 
+  <!-- Tailwind CSS Config & CDN -->
   <script>
     window.tailwind = {
       darkMode: 'class',
@@ -26,11 +27,15 @@
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
 
+  <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 
+  <!-- Firebase Compat SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
@@ -84,12 +89,19 @@
       backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.15);
     }
+
+    @media print {
+      body { background: white !important; color: black !important; }
+      .no-print { display: none !important; }
+    }
   </style>
 </head>
 <body id="bodyRoot" class="text-slate-100 min-h-screen flex flex-col justify-between antialiased selection:bg-red-500 selection:text-white">
 
+  <!-- Dynamic Toast Container -->
   <div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 no-print"></div>
 
+  <!-- Emergency Siren Overlay Banner -->
   <div id="emergencyBanner" class="hidden fixed top-0 inset-x-0 z-50 bg-red-600 text-white font-black py-3 px-4 text-center shadow-2xl flex items-center justify-between animate-bounce">
     <div class="flex items-center gap-2 mx-auto text-sm sm:text-base">
       <i class="fa-solid fa-triangle-exclamation text-xl animate-spin"></i>
@@ -100,10 +112,13 @@
     </button>
   </div>
 
+  <!-- Main App Wrapper -->
   <div class="max-w-7xl w-full mx-auto p-3 sm:p-5 flex-grow">
 
+    <!-- LOGIN SCREEN -->
     <div id="layarMasuk" class="min-h-[85vh] flex flex-col justify-center items-center px-4 no-print">
       <div class="w-full max-w-md">
+        <!-- Logo & Title -->
         <div class="text-center mb-8">
           <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-red-950/90 border-2 border-red-500 text-red-400 mb-4 shadow-xl shadow-red-600/40">
             <i class="fa-solid fa-shield-halved text-4xl"></i>
@@ -111,12 +126,14 @@
           <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">
             PUSAT KONTROL <span class="text-red-500 underline decoration-red-500 underline-offset-4">DATABASE</span>
           </h1>
+          <!-- Status Terhubung di Bawah Nama Aplikasi -->
           <div class="flex items-center justify-center gap-1.5 text-xs font-semibold text-emerald-400 mt-2">
             <i class="fa-solid fa-signal text-emerald-400 animate-pulse text-[11px]"></i>
             <span class="font-mono text-[11px]">TERHUBUNG</span>
           </div>
         </div>
 
+        <!-- Login Card -->
         <div class="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl border-2 border-slate-800">
           <div class="space-y-4">
             <div>
@@ -156,8 +173,10 @@
       </div>
     </div>
 
+    <!-- MAIN DASHBOARD -->
     <div id="lap" class="hidden space-y-4 sm:space-y-5 pb-12">
 
+      <!-- Header & System Clock -->
       <div class="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-2 border-slate-800 shadow-2xl">
         <div class="flex items-center justify-between w-full md:w-auto gap-3">
           <div class="flex items-center gap-3">
@@ -169,6 +188,7 @@
                 <span>PUSAT KONTROL</span>
                 <span class="text-red-500 drop-shadow-[0_0_10px_rgba(255,34,51,0.6)]">DATABASE</span>
               </h1>
+              <!-- Status Terhubung di Bawah Nama Aplikasi Header -->
               <div class="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 mt-1">
                 <i class="fa-solid fa-signal text-emerald-400 animate-pulse text-[11px]"></i>
                 <span class="font-mono text-[11px]">TERHUBUNG</span>
@@ -177,6 +197,7 @@
           </div>
         </div>
 
+        <!-- Live Clock, Voice & Audio Controls -->
         <div class="flex flex-wrap items-center justify-between md:justify-end gap-2 bg-black/90 p-2.5 px-3 sm:px-4 rounded-xl border border-slate-800">
           <div class="text-left md:text-right pr-2 border-r border-slate-800">
             <div id="jamSistem" class="text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-wider drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]">00:00:00</div>
@@ -184,6 +205,7 @@
           </div>
 
           <div class="flex items-center gap-1">
+            <!-- Test Audio & Floating Toast Button -->
             <button 
               onclick="ujiNotifikasiDanSuara()" 
               title="Uji Notifikasi Melayang & Suara Pengumuman"
@@ -193,6 +215,7 @@
               <span>UJI SUARA</span>
             </button>
 
+            <!-- Audio Sound Bell Toggle -->
             <button 
               id="btnAudioSound"
               onclick="toggleAudioAlert()" 
@@ -202,6 +225,7 @@
               <i id="iconAudioSound" class="fa-solid fa-bell text-lg text-emerald-400"></i>
             </button>
 
+            <!-- Voice TTS Announcer Toggle -->
             <button 
               id="btnVoiceAnnounce"
               onclick="toggleVoiceAnnounce()" 
@@ -211,6 +235,7 @@
               <i id="iconVoiceAnnounce" class="fa-solid fa-volume-high text-lg text-cyan-400"></i>
             </button>
 
+            <!-- Watchlist / DPO Target Manager Button -->
             <button 
               onclick="bukaModalWatchlist()" 
               title="Kelola Daftar Target Operasi Khusus (Blacklist)"
@@ -220,6 +245,7 @@
               <span id="badgeWatchlist" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
             </button>
 
+            <!-- TV Kiosk Fullscreen Mode Toggle -->
             <button 
               onclick="toggleFullscreen()" 
               title="Mode Layar Penuh TV Posko"
@@ -228,6 +254,7 @@
               <i class="fa-solid fa-expand text-lg"></i>
             </button>
 
+            <!-- Quick Add Button -->
             <button 
               onclick="bukaModalInput()" 
               class="py-2 px-3 bg-red-600 hover:bg-red-500 active:scale-95 text-white font-extrabold text-xs rounded-lg transition shadow-md shadow-red-950 flex items-center gap-1.5 ml-1"
@@ -236,6 +263,7 @@
               <span class="hidden sm:inline">INPUT DATA</span>
             </button>
 
+            <!-- Tombol ON/OFF Power & Standby -->
             <button 
               onclick="keluarSistem()" 
               title="Matikan Standby & Keluar (Kunci Kembali)"
@@ -248,23 +276,29 @@
         </div>
       </div>
 
+      <!-- MODUL UTAMA DASHBOARD -->
       <div id="modulUtama" class="space-y-4">
+        <!-- Statistics Grid Cards -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+          <!-- Hari ini -->
           <div class="glass-panel rounded-xl p-3.5 sm:p-4 border-t-4 border-t-emerald-400 border-x border-b border-slate-800 bg-emerald-950/20 relative overflow-hidden shadow-lg">
             <div class="text-[10px] sm:text-xs font-extrabold text-emerald-400 tracking-wider uppercase mb-1">HARI INI</div>
             <div id="jmlHari" class="text-2xl sm:text-3xl font-black text-emerald-300 font-mono drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">0</div>
             <i class="fa-solid fa-calendar-day absolute bottom-2 right-2 text-3xl text-emerald-400/15 pointer-events-none"></i>
           </div>
+          <!-- Minggu ini -->
           <div class="glass-panel rounded-xl p-3.5 sm:p-4 border-t-4 border-t-amber-400 border-x border-b border-slate-800 bg-amber-950/20 relative overflow-hidden shadow-lg">
             <div class="text-[10px] sm:text-xs font-extrabold text-amber-400 tracking-wider uppercase mb-1">MINGGU INI</div>
             <div id="jmlMinggu" class="text-2xl sm:text-3xl font-black text-amber-300 font-mono drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]">0</div>
             <i class="fa-solid fa-calendar-week absolute bottom-2 right-2 text-3xl text-amber-400/15 pointer-events-none"></i>
           </div>
+          <!-- Bulan ini -->
           <div class="glass-panel rounded-xl p-3.5 sm:p-4 border-t-4 border-t-cyan-400 border-x border-b border-slate-800 bg-cyan-950/20 relative overflow-hidden shadow-lg">
             <div class="text-[10px] sm:text-xs font-extrabold text-cyan-400 tracking-wider uppercase mb-1">BULAN INI</div>
             <div id="jmlBulan" class="text-2xl sm:text-3xl font-black text-cyan-300 font-mono drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">0</div>
             <i class="fa-solid fa-calendar-days absolute bottom-2 right-2 text-3xl text-cyan-400/15 pointer-events-none"></i>
           </div>
+          <!-- Tahun ini -->
           <div class="glass-panel rounded-xl p-3.5 sm:p-4 border-t-4 border-t-fuchsia-400 border-x border-b border-slate-800 bg-fuchsia-950/20 relative overflow-hidden shadow-lg">
             <div class="text-[10px] sm:text-xs font-extrabold text-fuchsia-400 tracking-wider uppercase mb-1">TAHUN INI</div>
             <div id="jmlTahun" class="text-2xl sm:text-3xl font-black text-fuchsia-300 font-mono drop-shadow-[0_0_8px_rgba(232,121,249,0.5)]">0</div>
@@ -272,7 +306,9 @@
           </div>
         </div>
 
+        <!-- Data Table View (NO, WILAYAH, NOPOL, SERI, NOKA, NOSIN, WAKTU PENGECEKAN) -->
         <div class="glass-panel rounded-2xl overflow-hidden border-2 border-slate-800 shadow-2xl">
+          <!-- Desktop Table Header -->
           <div class="grid grid-cols-12 gap-1 p-3.5 px-4 bg-slate-950 text-[11px] font-black uppercase tracking-wider text-slate-300 border-b-2 border-slate-800 text-center">
             <div class="col-span-1">NO</div>
             <div class="col-span-2">WILAYAH</div>
@@ -283,10 +319,11 @@
             <div class="col-span-2">WAKTU PENGECEKAN</div>
           </div>
 
+          <!-- Scrollable List -->
           <div id="daftarUtama" class="max-h-[540px] overflow-y-auto divide-y divide-slate-800/80 font-mono text-xs">
             <div class="p-12 text-center text-slate-400 space-y-3">
               <i class="fa-solid fa-circle-notch fa-spin text-3xl text-red-500"></i>
-              <p class="font-sans text-xs font-semibold">Sedang memuat database Firestore...</p>
+              <p class="font-sans text-xs font-semibold">Sedang memuat database Firestore secara real-time...</p>
             </div>
           </div>
         </div>
@@ -295,6 +332,7 @@
     </div>
   </div>
 
+  <!-- MODAL DETAIL DIALOG -->
   <div id="modalLatar" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center no-print" onclick="if(event.target.id==='modalLatar') tutupDetail()">
     <div class="glass-panel rounded-2xl border-2 border-slate-700 max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
       <div class="p-4 px-5 bg-black border-b-2 border-slate-800 flex items-center justify-between">
@@ -311,6 +349,7 @@
     </div>
   </div>
 
+  <!-- MODAL QUICK INPUT DATA -->
   <div id="modalInput" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center no-print" onclick="if(event.target.id==='modalInput') tutupModalInput()">
     <div class="glass-panel rounded-2xl border-2 border-slate-700 max-w-md w-full p-5 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -328,6 +367,7 @@
     </div>
   </div>
 
+  <!-- MODAL WATCHLIST / BLACKLIST MANAGER -->
   <div id="modalWatchlist" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center no-print" onclick="if(event.target.id==='modalWatchlist') tutupModalWatchlist()">
     <div class="glass-panel rounded-2xl border-2 border-red-700 max-w-md w-full p-5 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
