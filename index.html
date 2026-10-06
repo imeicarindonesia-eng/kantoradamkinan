@@ -3,30 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DATABASE IP REAL-TIME • Pusat Kontrol</title>
-  
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>DATABASE IP REAL-TIME - PUSAT KONTROL V3.8</title>
+
+  <!-- Tailwind CSS Config & CDN -->
   <script>
-    tailwind.config = {
+    window.tailwind = {
       darkMode: 'class',
       theme: {
         extend: {
           colors: {
-            brand: {
-              red: '#ff2233',
-              dark: '#000000',
-              card: '#0a0a0f',
-              border: '#2a2a38'
-            }
+            brandRed: '#ff2233',
+            emeraldNeon: '#34d399',
+            amberGold: '#fbbf24',
+            electricCyan: '#22d3ee',
           },
           fontFamily: {
+            sans: ['Inter', 'sans-serif'],
             mono: ['JetBrains Mono', 'Consolas', 'monospace']
           }
         }
       }
-    }
+    };
   </script>
+  <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -38,9 +37,9 @@
 
   <!-- Firebase Compat SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 
-  <!-- Custom CSS Styles -->
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -69,6 +68,16 @@
     @keyframes pulseGlow {
       0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
       50% { box-shadow: 0 0 35px rgba(16, 185, 129, 0.8); }
+    }
+
+    @keyframes statPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); filter: brightness(1.4); }
+      100% { transform: scale(1); }
+    }
+
+    .stat-updated {
+      animation: statPop 0.4s ease-in-out;
     }
 
     .glow-emerald {
@@ -212,6 +221,12 @@
               <span id="indicatorDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
               <span id="statusText" class="text-slate-300 font-semibold">🔄 Menghubungkan ke server...</span>
             </p>
+            <!-- Badge User ID Pengguna Aktif -->
+            <div class="mt-1 flex items-center gap-2 text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/80 px-2.5 py-0.5 rounded-md w-fit">
+              <i class="fa-solid fa-id-badge text-cyan-400"></i>
+              <span>USER ID:</span>
+              <span id="badgeUserIdDisplay" class="font-bold select-all">MEMUAT AUTH...</span>
+            </div>
           </div>
         </div>
 
@@ -771,10 +786,11 @@
     // System Access Key
     const KUNCI_AKSES = "222222";
 
-    // Firebase Config
+    // Firebase Config (All 7 Parameters Integrated)
     const FIREBASE_CONFIG = {
-      apiKey: "AIzaSySyBonuHp4nd-YZKWV5IM_2HRCfJ2TQ4zJaY",
+      apiKey: "AIzaSyBonuHp4nd-YZKWV5IM_2HRCfJ2TQ4zJaY",
       authDomain: "gen-lang-client-0221970857.firebaseapp.com",
+      databaseURL: "https://gen-lang-client-0221970857-default-rtdb.firebaseio.com",
       projectId: "gen-lang-client-0221970857",
       storageBucket: "gen-lang-client-0221970857.firebasestorage.app",
       messagingSenderId: "483674298302",
@@ -783,6 +799,34 @@
 
     if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
     const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    let currentUserId = null;
+    let namaPetugasAktif = localStorage.getItem('nama_petugas_posko') || '';
+
+    // Autentikasi Firebase User ID & Active User Tracking
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUserId = user.uid;
+        updateUserDisplay();
+      } else {
+        auth.signInAnonymously().then(res => {
+          currentUserId = res.user.uid;
+          updateUserDisplay();
+        }).catch(err => {
+          console.error("Firebase Auth Error:", err);
+          currentUserId = "USER-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+          updateUserDisplay();
+        });
+      }
+    });
+
+    function updateUserDisplay() {
+      const el = document.getElementById('badgeUserIdDisplay');
+      if (el) {
+        el.textContent = `${currentUserId || 'GUEST'}`;
+      }
+    }
 
     let semuaData = [];
     let pengamat = null;
@@ -949,11 +993,14 @@
 
     function masuk() {
       const inputPin = document.getElementById('kunci').value.trim();
+
       if (inputPin === KUNCI_AKSES) {
+        updateUserDisplay();
+
         localStorage.setItem('standby_mode', 'true');
         document.getElementById('layarMasuk').classList.add('hidden');
         document.getElementById('lap').classList.remove('hidden');
-        showToast('Akses Diterima! Masuk ke sistem...', 'success');
+        showToast(`Akses Diterima! Selamat bertugas`, 'success');
         mulaiPantau();
       } else {
         showToast('Kunci Akses (PIN) salah!', 'error');
@@ -1080,6 +1127,12 @@
     function ambilNoka(d) { return ambilNilai(d, ['Noka','no_rangka','rangka','NoRangka','NORANGKA']); }
     function ambilNosin(d) { return ambilNilai(d, ['Nosin','no_mesin','mesin','NoMesin','NOMESIN']); }
 
+    // Extraction function for Active Searching User ID / Officer
+    function ambilUserPengecek(d) {
+      const val = ambilNilai(d, ['petugas_id', 'user_id', 'id_petugas', 'nama_petugas', 'operator', 'device_id', 'created_by', 'uid']);
+      return val !== '-' ? val : (d.nama_petugas || 'SISTEM / POSKO');
+    }
+
     function formatWaktu(ts) {
       if (!ts) return "-";
       let d;
@@ -1106,8 +1159,18 @@
 
       semuaData.forEach(doc => {
         const d = doc.data();
-        if (!d.waktu_ditemukan) return;
-        const tsMs = d.waktu_ditemukan.seconds ? d.waktu_ditemukan.seconds * 1000 : new Date(d.waktu_ditemukan).getTime();
+        
+        // Fallback to current time if timestamp is resolving from serverTimestamp()
+        let tsMs = Date.now();
+        if (d.waktu_ditemukan) {
+          if (typeof d.waktu_ditemukan.seconds === 'number') {
+            tsMs = d.waktu_ditemukan.seconds * 1000;
+          } else if (typeof d.waktu_ditemukan === 'string' || typeof d.waktu_ditemukan === 'number') {
+            const parsed = new Date(d.waktu_ditemukan).getTime();
+            if (!isNaN(parsed)) tsMs = parsed;
+          }
+        }
+
         const tgl = new Date(tsMs);
 
         if (tgl >= awalHari) hari++;
@@ -1123,10 +1186,11 @@
         if (wil !== '-') wilCounts[wil] = (wilCounts[wil] || 0) + 1;
       });
 
-      document.getElementById('jmlHari').textContent = hari;
-      document.getElementById('jmlMinggu').textContent = minggu;
-      document.getElementById('jmlBulan').textContent = bulan;
-      document.getElementById('jmlTahun').textContent = tahun;
+      // Update values with visual pop trigger
+      updateStatEl('jmlHari', hari);
+      updateStatEl('jmlMinggu', minggu);
+      updateStatEl('jmlBulan', bulan);
+      updateStatEl('jmlTahun', tahun);
 
       // Render Regional Distribution
       const wilEntries = Object.entries(wilCounts).sort((a,b) => b[1] - a[1]);
@@ -1162,6 +1226,24 @@
       }).join('');
     }
 
+    function updateStatEl(id, nilaiBaru) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      
+      // Ambil angka lama (hapus titik pemisah)
+      const nilaiLama = parseInt(el.textContent.replace(/\D/g, '')) || 0;
+      
+      // Format angka dengan pemisah ribuan Indonesia (contoh: 99.999.999.999)
+      const nilaiFormatted = Number(nilaiBaru).toLocaleString('id-ID');
+      el.textContent = nilaiFormatted;
+      
+      if (nilaiBaru !== nilaiLama && !isInitialLoad) {
+        el.classList.remove('stat-updated');
+        void el.offsetWidth; // Trigger reflow
+        el.classList.add('stat-updated');
+      }
+    }
+
     function mulaiPantau() {
       if (pengamat) pengamat();
       
@@ -1172,9 +1254,10 @@
       indicatorDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping";
       isInitialLoad = true;
 
+      // Firestore enforces a maximum limit of 10,000 documents per query
       pengamat = db.collection('pencarian')
         .orderBy('waktu_ditemukan', 'desc')
-        .limit(3000)
+        .limit(10000)
         .onSnapshot(snap => {
           semuaData = snap.docs;
           statusText.textContent = `✅ TERHUBUNG — ${snap.size} data tersimpan`;
@@ -1186,24 +1269,26 @@
           if (isInitialLoad) {
             isInitialLoad = false;
           } else {
-            const addedChanges = snap.docChanges().filter(change => change.type === 'added');
+            const addedChanges = snap.docChanges().filter(change => change.type === 'added' || change.type === 'modified');
             if (addedChanges.length > 0) {
               addedChanges.forEach(change => {
-                const docData = change.doc.data();
-                const plat = ambilPlat(docData);
+                if (change.type === 'added') {
+                  const docData = change.doc.data();
+                  const plat = ambilPlat(docData);
 
-                showToast(`🔔 DATA BARU MASUK: ${plat}`, 'success');
-                playNotificationChime();
+                  showToast(`🔔 DATA BARU MASUK: ${plat}`, 'success');
+                  playNotificationChime();
 
-                const cleanPlat = plat.replace(/\s+/g, '').toUpperCase();
-                const isWatchlisted = watchlistNopol.some(w => cleanPlat.includes(w.replace(/\s+/g, '').toUpperCase()));
+                  const cleanPlat = plat.replace(/\s+/g, '').toUpperCase();
+                  const isWatchlisted = watchlistNopol.some(w => cleanPlat.includes(w.replace(/\s+/g, '').toUpperCase()));
 
-                if (isWatchlisted) {
-                  bunyikanSireneTarget();
-                  document.getElementById('emergencyMsg').textContent = `TARGET OPERASI KHUSUS TERDETEKSI: ${plat}!`;
-                  ucapkanText("PERINGATAN TARGET KHUSUS TERDETEKSI");
-                } else {
-                  ucapkanText("SERVER NORMAL DATA BARU READY");
+                  if (isWatchlisted) {
+                    bunyikanSireneTarget();
+                    document.getElementById('emergencyMsg').textContent = `TARGET OPERASI KHUSUS TERDETEKSI: ${plat}!`;
+                    ucapkanText("PERINGATAN TARGET KHUSUS TERDETEKSI");
+                  } else {
+                    ucapkanText("SERVER NORMAL DATA BARU READY");
+                  }
                 }
               });
             }
@@ -1224,7 +1309,6 @@
       showToast('Memuat ulang database Firestore...', 'info');
     }
 
-    // Module Switcher Logic
     function gantiModul(modul) {
       modulAktif = modul;
       
@@ -1392,6 +1476,7 @@
         const noka = ambilNoka(d);
         const nosin = ambilNosin(d);
         const wilayah = deteksiWilayah(plat);
+        const userPengecek = ambilUserPengecek(d);
         const waktuStr = formatWaktu(d.waktu_ditemukan);
         const isPinned = pinnedIds.includes(doc.id);
         const tagStatus = tagStatusMap[doc.id] || null;
@@ -1427,8 +1512,9 @@
                   <div class="font-extrabold text-emerald-400 text-sm tracking-wider font-mono flex items-center flex-wrap gap-1">
                     <span>${plat}</span> ${tagBadgeHtml} ${dupBadgeHtml}
                   </div>
-                  <div class="text-[10px] text-slate-400 font-sans font-semibold flex items-center gap-1">
-                    <i class="fa-solid fa-location-dot text-[9px] text-red-400"></i> ${wilayah}
+                  <div class="text-[10px] text-slate-400 font-sans font-semibold flex items-center gap-1.5 flex-wrap mt-0.5">
+                    <span><i class="fa-solid fa-location-dot text-[9px] text-red-400"></i> ${wilayah}</span>
+                    <span class="text-cyan-400 bg-cyan-950/80 px-1.5 py-0.2 rounded border border-cyan-800/60 font-mono text-[9px]"><i class="fa-solid fa-user-check text-[8px]"></i> ID: ${userPengecek}</span>
                   </div>
                 </div>
               </div>
@@ -1459,14 +1545,19 @@
       
       const d = doc.data();
       const isPinned = pinnedIds.includes(id);
+      const userPengecek = ambilUserPengecek(d);
 
       const iconStarModal = document.getElementById('iconStarModal');
       if (iconStarModal) iconStarModal.className = isPinned ? 'fa-solid fa-star text-amber-400 text-base' : 'fa-regular fa-star text-base';
 
       let html = `
-        <div class="mb-3 p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-          <div class="text-[10px] text-slate-500 font-sans font-bold">DOKUMEN ID:</div>
-          <div class="text-xs text-red-400 font-mono font-bold select-all">${id}</div>
+        <div class="mb-3 p-3 bg-cyan-950/50 rounded-xl border border-cyan-700/60 space-y-1">
+          <div class="flex items-center justify-between text-[10px] text-cyan-300 font-sans font-bold">
+            <span><i class="fa-solid fa-user-shield"></i> PETUGAS PENGECEK / OPERATOR:</span>
+            <span class="bg-cyan-900/90 text-white px-2 py-0.5 rounded font-mono font-black">${userPengecek}</span>
+          </div>
+          <div class="text-[10px] text-slate-500 font-sans font-bold pt-1 border-t border-cyan-900/40">DOKUMEN ID FIRESTORE:</div>
+          <div class="text-xs text-red-400 font-mono font-bold select-all break-all">${id}</div>
         </div>
       `;
 
@@ -1542,12 +1633,14 @@
       const plat = ambilPlat(d);
       const noka = ambilNoka(d);
       const nosin = ambilNosin(d);
+      const userPengecek = ambilUserPengecek(d);
       const waktu = d.waktu_ditemukan ? formatWaktu(d.waktu_ditemukan) : "-";
       
       const kunciDikecualikan = [
         'waktu_ditemukan','NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL',
         'Noka','no_rangka','rangka','NoRangka','NORANGKA',
-        'Nosin','no_mesin','mesin','NoMesin','NOMESIN'
+        'Nosin','no_mesin','mesin','NoMesin','NOMESIN',
+        'petugas_id','user_id','id_petugas','nama_petugas','operator','uid'
       ];
       
       let rincian = '';
@@ -1567,6 +1660,7 @@
 🚗 NOPOL    : ${plat}
 🔶 NOKA     : ${noka}
 🔷 NOSIN    : ${nosin}
+👤 PENGECEK : ${userPengecek}
 🕐 WAKTU    : ${waktu}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${rincian}Terima kasih..`;
@@ -1634,12 +1728,14 @@ ${rincian}Terima kasih..`;
         NOKA: noka || '-',
         NOSIN: nosin || '-',
         KETERANGAN: ket || '-',
+        petugas_id: currentUserId || 'ANON',
+        nama_petugas: namaPetugasAktif || 'PETUGAS POSKO',
         waktu_ditemukan: firebase.firestore.FieldValue.serverTimestamp()
       };
 
       db.collection('pencarian').add(dataBaru)
         .then(() => {
-          showToast('Data berhasil disimpan ke Firestore!', 'success');
+          showToast(`Data disimpan oleh User ID: ${currentUserId.substring(0,8)}...`, 'success');
           tutupModalInput();
         })
         .catch(err => {
@@ -1764,7 +1860,6 @@ ${rincian}Terima kasih..`;
       `;
     }
 
-    // Watchlist Management
     function bukaModalWatchlist() {
       renderWatchlist();
       document.getElementById('modalWatchlist').classList.remove('hidden');
