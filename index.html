@@ -1,488 +1,881 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="dark h-full bg-black">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DATABASE IP REAL-TIME</title>
+  <title>DATABASE IP REAL-TIME • Pusat Kontrol</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              red: '#ff2233',
+              dark: '#000000',
+              card: '#0a0a0f',
+              border: '#2a2a38'
+            }
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Consolas', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+
+  <!-- Firebase Compat SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { 
-      font-family: 'Arial', sans-serif; 
-      background: #000; color: #fff; 
-      padding: 12px; max-width: 760px; margin: 0 auto; min-height: 100vh;
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #000000 !important;
+      background-image: 
+        radial-gradient(at 50% 0%, rgba(255, 30, 60, 0.12) 0px, transparent 60%),
+        radial-gradient(at 100% 100%, rgba(0, 255, 136, 0.08) 0px, transparent 60%);
+      background-attachment: fixed;
     }
 
-    .db-putih { color: #ffffff; }
-    .ip-merah { color: #ff0000; }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #000000;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #33334d;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #ff2233;
+    }
 
-    .layar-masuk { margin-top: 120px; text-align: center; }
-    .logo { font-size: 30px; font-weight: 900; margin-bottom: 5px; }
-    .sub { color: #888; font-size: 13px; margin-bottom: 30px; }
-    .kotak-masuk {
-      background: #111; padding: 25px; border-radius: 14px;
-      border: 1px solid #222; max-width: 380px; margin: 0 auto;
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(0, 255, 136, 0.3); }
+      50% { box-shadow: 0 0 30px rgba(0, 255, 136, 0.7); }
     }
-    input {
-      width: 100%; padding: 14px; font-size: 15px; border-radius: 10px;
-      border: none; background: #1a1a1a; color: #fff;
-      margin-bottom: 15px; outline: none; border: 2px solid transparent;
-    }
-    input:focus { border-color: #ff0000; }
-    .btn {
-      width: 100%; padding: 14px; font-size: 16px; font-weight: bold;
-      border-radius: 10px; border: none; background: #ff0000;
-      color: #fff; cursor: pointer; transition: 0.2s;
-    }
-    .btn:active { transform: scale(0.97); background: #cc0000; }
 
-    .waktu-sistem {
-      background: #111; padding: 10px; border-radius: 10px; text-align: center;
-      margin-bottom: 10px; border: 1px solid #222;
+    .glow-emerald {
+      animation: pulseGlow 2s infinite;
     }
-    .waktu-jam { font-size: 22px; font-weight: bold; color: #10b981; font-family: monospace; }
-    .waktu-tgl { font-size: 12px; color: #aaa; margin-top: 2px; }
 
-    .notifikasi {
-      background: #1a2f1a; border: 1px solid #10b981; border-radius: 10px;
-      padding: 10px 14px; margin-bottom: 10px; display: none;
-      animation: kedip 1s infinite alternate;
+    @keyframes scanline {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(1000%); }
     }
-    .notifikasi.aktif { display: block; }
-    @keyframes kedip {
-      from { box-shadow: 0 0 4px #10b981; }
-      to   { box-shadow: 0 0 12px #10b981; }
-    }
-    .notif-teks { color: #10b981; font-weight: bold; font-size: 14px; }
-    .notif-info { font-size: 11px; color: #999; margin-top: 2px; }
 
-    .statistik {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px;
+    .scan-line {
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255, 40, 70, 0.8), transparent);
+      animation: scanline 7s linear infinite;
+      pointer-events: none;
     }
-    .stat-kotak {
-      background: #111; padding: 10px 6px; border-radius: 10px; text-align: center;
-      border-top: 3px solid;
-    }
-    .stat-harian  { border-color: #10b981; }
-    .stat-mingguan{ border-color: #f59e0b; }
-    .stat-bulanan { border-color: #6366f1; }
-    .stat-tahunan { border-color: #ec4899; }
-    .stat-angka { font-size: 18px; font-weight: bold; }
-    .stat-harian  .stat-angka { color: #10b981; }
-    .stat-mingguan .stat-angka { color: #f59e0b; }
-    .stat-bulanan .stat-angka { color: #6366f1; }
-    .stat-tahunan .stat-angka { color: #ec4899; }
-    .stat-label { font-size: 9px; color: #888; margin-top: 2px; }
 
-    .menu { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
-    .tab-btn {
-      padding: 10px 6px; font-size: 12px; font-weight: bold;
-      border-radius: 10px; border: none; background: #222;
-      color: #fff; cursor: pointer; transition: 0.2s;
+    .glass-panel {
+      background: rgba(10, 10, 14, 0.95);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
     }
-    .tab-btn.aktif { background: #ff0000; }
-    .refresh {
-      background: #10b981; width: 100%; padding: 10px; font-size: 14px;
-      margin-bottom: 10px; border-radius: 10px; border: none; color: #fff; font-weight: bold; cursor: pointer;
-    }
-    .refresh:active { background: #0ea874; }
-
-    .judul { text-align: center; font-size: 20px; font-weight: bold; margin: 8px 0; }
-    .status { text-align: center; font-size: 11px; margin: 4px 0 8px; color: #0f0; }
-    .status.salah { color: #f44; }
-    
-    .tabel-header {
-      display: grid; grid-template-columns: 1fr 1fr 1fr 140px; gap: 4px;
-      padding: 8px 6px; font-weight: bold; font-size: 10px; color: #aaa;
-      border-bottom: 2px solid #333;
-    }
-    .daftar { max-height: 400px; overflow-y: auto; border: 1px solid #222; border-radius: 10px; }
-    
-    .baris {
-      display: grid; grid-template-columns: 1fr 1fr 1fr 140px; gap: 4px;
-      padding: 8px 6px; border-bottom: 1px solid #222;
-      font-size: 10px; align-items: center; cursor: pointer; transition: 0.2s;
-    }
-    .baris:hover { background: #1a1a1a; }
-    .baris:last-child { border-bottom: none; }
-    .baris.baru { background: #1a2f1a; border-left: 3px solid #10b981; }
-    
-    .plat { color: #10b981; font-weight: bold; font-family: monospace; }
-    .rangka { color: #f59e0b; }
-    .mesin { color: #6366f1; }
-    .waktu { color: #666; font-size: 9px; line-height: 1.4; white-space: pre-line; }
-    
-    .kosong { text-align: center; padding: 40px 20px; color: #555; font-size: 13px; }
-    .info-bawah { text-align: center; font-size: 10px; color: #444; margin-top: 8px; }
-    .sembunyi { display: none !important; }
-
-    .latar {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.92); z-index: 999; display: flex; align-items: center; justify-content: center;
-      padding: 15px;
-    }
-    .modal {
-      background: #111; border-radius: 14px; padding: 20px; max-width: 520px; width: 100%;
-      border: 1px solid #333; max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column;
-    }
-    .tutup-baris { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-    .btn-tutup { background: #333; border: none; color: #fff; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
-    .modal-judul { font-size: 16px; font-weight: bold; }
-    .isi { font-size: 12px; line-height: 1.8; margin: 10px 0; flex: 1; }
-    .dtl { padding: 4px 0; border-bottom: 1px solid #222; }
-    .lbl { color: #888; display: inline-block; min-width: 140px; font-weight: bold; }
-    
-    .btn-wa-bawah {
-      width: 100%; padding: 14px; font-size: 15px; font-weight: bold;
-      background: #25d366; border: none; color: #fff;
-      border-radius: 10px; cursor: pointer; margin-top: 10px;
-      transition: 0.2s;
-    }
-    .btn-wa-bawah:active { transform: scale(0.97); background: #1fb858; }
   </style>
 </head>
-<body>
+<body class="text-slate-100 min-h-screen flex flex-col justify-between antialiased selection:bg-red-500 selection:text-white">
 
-  <div id="layarMasuk" class="layar-masuk">
-    <div class="logo">
-      <span class="db-putih">PUSAT KONTROL</span> <span class="ip-merah">DATABASE</span>
+  <div class="scan-line"></div>
+
+  <!-- Dynamic Toast Container -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4"></div>
+
+  <!-- Main App Wrapper -->
+  <div class="max-w-5xl w-full mx-auto p-3 sm:p-5 flex-grow">
+
+    <!-- LOGIN SCREEN -->
+    <div id="layarMasuk" class="min-h-[80vh] flex flex-col justify-center items-center px-4">
+      <div class="w-full max-w-md">
+        <!-- Logo & Title -->
+        <div class="text-center mb-8">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-950/80 border-2 border-red-500 text-red-400 mb-4 shadow-lg shadow-red-600/30">
+            <i class="fa-solid fa-shield-halved text-3xl"></i>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">
+            PUSAT KONTROL <span class="text-red-500 underline decoration-red-500 underline-offset-4">DATABASE</span>
+          </h1>
+          <p class="text-slate-300 text-xs sm:text-sm mt-2 flex items-center justify-center gap-2 font-medium">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+            Real-Time Vehicle Lookup System
+          </p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl border-2 border-slate-800">
+          <div class="space-y-4">
+            <div>
+              <label for="kunci" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                Kunci Akses Sistem
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <i class="fa-solid fa-key text-sm"></i>
+                </div>
+                <input 
+                  type="password" 
+                  id="kunci" 
+                  placeholder="Masukkan Kunci Akses (PIN)" 
+                  onkeydown="if(event.key==='Enter') masuk()"
+                  class="w-full pl-10 pr-10 py-3.5 bg-black border-2 border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/40 font-mono text-sm transition-all"
+                >
+                <button 
+                  type="button" 
+                  onclick="toggleShowPin()" 
+                  class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-white"
+                >
+                  <i id="iconShowPin" class="fa-solid fa-eye text-sm"></i>
+                </button>
+              </div>
+            </div>
+
+            <button 
+              onclick="masuk()" 
+              class="w-full py-3.5 px-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 active:scale-[0.98] text-white font-black rounded-xl shadow-lg shadow-red-950/80 transition duration-200 flex items-center justify-center gap-2 text-sm tracking-wider"
+            >
+              <span>MASUK SISTEM</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </button>
+          </div>
+
+          <div class="mt-6 pt-5 border-t border-slate-800 text-center">
+            <span class="text-[11px] text-slate-400 font-semibold flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-lock text-[10px] text-red-400"></i> Enkripsi Tingkat Tinggi • Akses Terbatas
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
-    <p class="sub">Data Real-Time • Kirim WhatsApp</p>
-    <div class="kotak-masuk">
-      <input type="password" id="kunci" placeholder="Masukkan Kunci Akses">
-      <button class="btn" onclick="masuk()">MASUK</button>
+
+    <!-- MAIN DASHBOARD (HIDDEN INITIALLY) -->
+    <div id="lap" class="hidden space-y-4 sm:space-y-5 pb-12">
+
+      <!-- Header & System Clock -->
+      <div class="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-2 border-slate-800 shadow-2xl">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-red-950/90 border-2 border-red-500 text-red-400 flex items-center justify-center flex-shrink-0 shadow-md shadow-red-900/50">
+            <i class="fa-solid fa-database text-xl"></i>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+              <span>PUSAT KONTROL</span>
+              <span class="text-red-500 drop-shadow-[0_0_8px_rgba(255,34,51,0.5)]">DATABASE</span>
+            </h1>
+            <p class="text-xs text-slate-300 font-medium flex items-center gap-1.5">
+              <span id="indicatorDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+              <span id="statusText" class="text-slate-300 font-semibold">🔄 Menghubungkan ke server...</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Live Clock & Audio Toggle -->
+        <div class="flex items-center justify-between md:justify-end gap-3 bg-black/90 p-2.5 px-4 rounded-xl border border-slate-800">
+          <div class="text-left md:text-right">
+            <div id="jamSistem" class="text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-wider drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]">00:00:00</div>
+            <div id="tglSistem" class="text-[11px] text-slate-300 font-bold">Senin, 01 Januari 2026</div>
+          </div>
+          <div class="h-8 w-px bg-slate-800"></div>
+          <button 
+            id="btnAudioSound"
+            onclick="toggleAudioAlert()" 
+            title="Aktifkan/Matikan Suara Notifikasi"
+            class="p-2 text-slate-300 hover:text-emerald-400 hover:bg-slate-900 rounded-lg transition"
+          >
+            <i id="iconAudioSound" class="fa-solid fa-bell text-lg text-emerald-400"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Alert Banner for New Records -->
+      <div id="kotakNotif" class="hidden glass-panel border-2 border-emerald-400 bg-emerald-950/40 glow-emerald rounded-xl p-3.5 px-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-emerald-500/30 text-emerald-300 border border-emerald-400 flex items-center justify-center font-bold">
+              <i class="fa-solid fa-bell animate-bounce text-base"></i>
+            </div>
+            <div>
+              <div class="text-xs font-black text-emerald-300 tracking-wider uppercase">DATA BARU TERPEREKAM!</div>
+              <div id="infoNotif" class="text-xs text-white font-medium">Memuat rincian terbaru...</div>
+            </div>
+          </div>
+          <button onclick="document.getElementById('kotakNotif').classList.add('hidden')" class="text-slate-300 hover:text-white p-1">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Statistics Grid Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+        <!-- Hari ini -->
+        <div class="glass-panel rounded-xl p-3.5 sm:p-4 border-t-4 border-t-emerald-400 border-x border-b border-slate-800 bg-emerald-950/10 relative overflow-hidden shadow-lg">
+          <div class="text-[10px] sm:text-xs font-extrabold text-emerald-400 tracking-wider uppercase mb-1">HARI INI</div>
+          <div id="jmlHari" class="text-2xl sm:text-3xl font-black text-emerald-300 font-mono drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">0</div>
+          <i class="fa-solid fa-calendar-day absolute bottom-2 right-2 text-3xl text-emerald-400/15 pointer-events-none"></i>
+        </div>
+        <!-- Minggu ini -->
+        <div class="glass-panel rounded-xl p-3.5 sm:p-4 border-t-4 border-t-amber-400 border-x border-b border-slate-800 bg-amber-950/10 relative overflow-hidden shadow-lg">
+          <div class="text-[10px] sm:text-xs font-extrabold text-amber-400 tracking-wider uppercase mb-1">MINGGU INI</div>
+          <div id="jmlMinggu" class="text-2xl sm:text-3xl font-black text-amber-300 font-mono drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]">0</div>
+          <i class="fa-solid fa-calendar-week absolute bottom-2 right-2 text-3xl text-amber-400/15 pointer-events-none"></i>
+        </div>
+        <!-- Bulan ini -->
+        <div class="glass-panel rounded-xl p-3.5 sm:p-4 border-t-4 border-t-cyan-400 border-x border-b border-slate-800 bg-cyan-950/10 relative overflow-hidden shadow-lg">
+          <div class="text-[10px] sm:text-xs font-extrabold text-cyan-400 tracking-wider uppercase mb-1">BULAN INI</div>
+          <div id="jmlBulan" class="text-2xl sm:text-3xl font-black text-cyan-300 font-mono drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">0</div>
+          <i class="fa-solid fa-calendar-days absolute bottom-2 right-2 text-3xl text-cyan-400/15 pointer-events-none"></i>
+        </div>
+        <!-- Tahun ini -->
+        <div class="glass-panel rounded-xl p-3.5 sm:p-4 border-t-4 border-t-fuchsia-400 border-x border-b border-slate-800 bg-fuchsia-950/10 relative overflow-hidden shadow-lg">
+          <div class="text-[10px] sm:text-xs font-extrabold text-fuchsia-400 tracking-wider uppercase mb-1">TAHUN INI</div>
+          <div id="jmlTahun" class="text-2xl sm:text-3xl font-black text-fuchsia-300 font-mono drop-shadow-[0_0_8px_rgba(232,121,249,0.5)]">0</div>
+          <i class="fa-solid fa-calendar absolute bottom-2 right-2 text-3xl text-fuchsia-400/15 pointer-events-none"></i>
+        </div>
+      </div>
+
+      <!-- Action Controls & Filters Bar -->
+      <div class="glass-panel rounded-xl p-3.5 sm:p-4 space-y-3 border-2 border-slate-800">
+        <div class="flex flex-col sm:flex-row gap-2.5 justify-between items-stretch sm:items-center">
+          
+          <!-- Search Input Box -->
+          <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            </div>
+            <input 
+              type="text" 
+              id="cariInput" 
+              placeholder="Cari Nopol, Noka, Nosin, atau kata kunci..." 
+              oninput="tampil()"
+              class="w-full pl-9 pr-8 py-2.5 bg-black border-2 border-slate-700 rounded-lg text-white text-xs placeholder-slate-400 focus:outline-none focus:border-red-500 font-mono font-medium"
+            >
+            <button 
+              id="btnClearSearch" 
+              onclick="clearSearch()" 
+              class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white"
+            >
+              <i class="fa-solid fa-circle-xmark text-sm"></i>
+            </button>
+          </div>
+
+          <!-- Buttons: Refresh & Export -->
+          <div class="flex items-center gap-2">
+            <button 
+              onclick="muatUlang()" 
+              class="flex-1 sm:flex-none py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold text-xs rounded-lg transition shadow-md shadow-emerald-950 flex items-center justify-center gap-1.5"
+            >
+              <i class="fa-solid fa-rotate-right text-xs"></i>
+              <span>REFRESH</span>
+            </button>
+            
+            <button 
+              onclick="eksporCSV()" 
+              title="Unduh sebagai file CSV"
+              class="py-2.5 px-3.5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-slate-200 font-bold text-xs rounded-lg transition border border-slate-700 flex items-center justify-center gap-1.5"
+            >
+              <i class="fa-solid fa-file-csv text-sm text-emerald-400"></i>
+              <span class="hidden sm:inline">EKSPOR</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab Filters -->
+        <div class="grid grid-cols-3 gap-1.5 bg-black p-1 rounded-xl border border-slate-800">
+          <button 
+            id="tHari" 
+            onclick="buka('hari')" 
+            class="tab-btn py-2 text-xs font-black rounded-lg transition duration-150 text-slate-300 hover:text-white flex items-center justify-center gap-1.5"
+          >
+            <i class="fa-solid fa-clock text-[10px]"></i>
+            <span>HARI INI</span>
+          </button>
+          <button 
+            id="tMinggu" 
+            onclick="buka('minggu')" 
+            class="tab-btn py-2 text-xs font-black rounded-lg transition duration-150 text-slate-300 hover:text-white flex items-center justify-center gap-1.5"
+          >
+            <i class="fa-solid fa-calendar-week text-[10px]"></i>
+            <span>MINGGU INI</span>
+          </button>
+          <button 
+            id="tSemua" 
+            onclick="buka('semua')" 
+            class="tab-btn py-2 text-xs font-black rounded-lg transition duration-150 text-slate-300 hover:text-white flex items-center justify-center gap-1.5"
+          >
+            <i class="fa-solid fa-list text-[10px]"></i>
+            <span>SEMUA DATA</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Data Table View -->
+      <div class="glass-panel rounded-2xl overflow-hidden border-2 border-slate-800 shadow-2xl">
+        <!-- Desktop Table Header -->
+        <div class="hidden md:grid grid-cols-12 gap-2 p-3.5 px-4 bg-slate-950 text-[11px] font-black uppercase tracking-wider text-slate-300 border-b-2 border-slate-800">
+          <div class="col-span-3 flex items-center gap-1.5">
+            <i class="fa-solid fa-car text-emerald-400"></i> NOPOL
+          </div>
+          <div class="col-span-3 flex items-center gap-1.5">
+            <i class="fa-solid fa-microchip text-amber-400"></i> NOKA
+          </div>
+          <div class="col-span-3 flex items-center gap-1.5">
+            <i class="fa-solid fa-gears text-cyan-400"></i> NOSIN
+          </div>
+          <div class="col-span-3 flex items-center justify-end gap-1.5">
+            <i class="fa-regular fa-clock text-slate-300"></i> WAKTU INPUT
+          </div>
+        </div>
+
+        <!-- Scrollable List -->
+        <div id="daftarUtama" class="max-h-[520px] overflow-y-auto divide-y divide-slate-800/80 font-mono text-xs">
+          <div class="p-12 text-center text-slate-400 space-y-3">
+            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-red-500"></i>
+            <p class="font-sans text-xs font-semibold">Sedang memuat database Firestore...</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-center text-[11px] text-slate-400 font-sans font-semibold flex items-center justify-center gap-1">
+        <i class="fa-solid fa-hand-pointer text-[10px] text-red-400"></i> Klik pada baris data untuk melihat rincian & kirim format laporan WhatsApp.
+      </p>
+
     </div>
   </div>
 
-  <div id="lap" class="sembunyi">
-    <h1 class="judul">
-      <span class="db-putih">🖥 PUSAT KONTROL</span> <span class="ip-merah">DATABASE</span>
-    </h1>
-    
-    <div class="waktu-sistem">
-      <div class="waktu-jam" id="jamSistem">00:00:00</div>
-      <div class="waktu-tgl" id="tglSistem">Senin, 05 Oktober 2026</div>
-    </div>
-
-    <div class="notifikasi" id="kotakNotif">
-      <div class="notif-teks">🔔 DATA BARU MASUK!</div>
-      <div class="notif-info" id="infoNotif">Mengecek...</div>
-    </div>
-
-    <div class="statistik">
-      <div class="stat-kotak stat-harian">
-        <div class="stat-angka" id="jmlHari">0</div>
-        <div class="stat-label">HARI INI</div>
-      </div>
-      <div class="stat-kotak stat-mingguan">
-        <div class="stat-angka" id="jmlMinggu">0</div>
-        <div class="stat-label">MINGGU INI</div>
-      </div>
-      <div class="stat-kotak stat-bulanan">
-        <div class="stat-angka" id="jmlBulan">0</div>
-        <div class="stat-label">BULAN INI</div>
-      </div>
-      <div class="stat-kotak stat-tahunan">
-        <div class="stat-angka" id="jmlTahun">0</div>
-        <div class="stat-label">TAHUN INI</div>
-      </div>
-    </div>
-
-    <p class="status" id="status">🔄 Menghubungkan...</p>
-    <button class="refresh" onclick="muatUlang()">🔄 REFRESH DATA</button>
-
-    <div class="menu">
-      <button class="tab-btn aktif" id="tHari" onclick="buka('hari')">HARI INI</button>
-      <button class="tab-btn" id="tMinggu" onclick="buka('minggu')">MINGGU INI</button>
-      <button class="tab-btn" id="tSemua" onclick="buka('semua')">SEMUA DATA</button>
-    </div>
-
-    <div class="tabel-header">
-      <div>🚗 NOPOL</div>
-      <div>🔶 NOKA</div>
-      <div>🔷 NOSIN</div>
-      <div>🕐 WAKTU</div>
-    </div>
-    <div class="daftar" id="daftarUtama">
-      <div class="kosong">⏳ Memuat data...</div>
-    </div>
-
-    <p class="info-bawah">👆 Klik baris untuk lihat detail & kirim ke WhatsApp</p>
-  </div>
-
-  <div id="modalLatar" class="latar sembunyi" onclick="if(event.target.id==='modalLatar') tutupDetail()">
-    <div class="modal">
-      <div class="tutup-baris">
-        <div class="modal-judul">DETAIL DATA</div>
-        <button class="btn-tutup" onclick="tutupDetail()">✕ Tutup</button>
-      </div>
-      <div class="isi" id="modalIsi"></div>
-      <button class="btn-wa-bawah" id="btnWaModal" onclick="kirimWaDariModal()">📲 KIRIM KE WHATSAPP</button>
-    </div>
-  </div>
-
-<script>
-const namaHari = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
-const namaBulan = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-
-function perbaruiWaktuSistem() {
-  const skrg = new Date();
-  document.getElementById('jamSistem').textContent = 
-    [skrg.getHours(), skrg.getMinutes(), skrg.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
-  document.getElementById('tglSistem').textContent = 
-    `${namaHari[skrg.getDay()]}, ${skrg.getDate()} ${namaBulan[skrg.getMonth()]} ${skrg.getFullYear()}`;
-}
-perbaruiWaktuSistem();
-setInterval(perbaruiWaktuSistem, 1000);
-
-// ✅ KONFIGURASI FIREBASE — SUDAH DIPERBAIKI
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSySyBonuHp4nd-YZKWV5IM_2HRCfJ2TQ4zJaY",
-  authDomain: "gen-lang-client-0221970857.firebaseapp.com",
-  projectId: "gen-lang-client-0221970857",
-  storageBucket: "gen-lang-client-0221970857.firebasestorage.app",
-  messagingSenderId: "483674298302",
-  appId: "1:483674298302:web:8c6ccf111af4de7bbecbef"
-};
-
-if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-const db = firebase.firestore();
-let semuaData = [];
-let pengamat = null;
-let tabAktif = 'hari';
-let jumlahDataSebelum = 0;
-let docIdTerpilih = null;
-
-// 🔑 GANTI KUNCI DI SINI JIKA INGIN
-const KUNCI_AKSES = "222222";
-
-function masuk() {
-  if (document.getElementById('kunci').value.trim() === KUNCI_AKSES) {
-    document.getElementById('layarMasuk').classList.add('sembunyi');
-    document.getElementById('lap').classList.remove('sembunyi');
-    mulaiPantau();
-  } else {
-    alert("❌ Kunci salah!");
-    document.getElementById('kunci').value = "";
-  }
-}
-
-function hitungStatistik() {
-  const skrg = new Date();
-  const awalHari = new Date(skrg.getFullYear(), skrg.getMonth(), skrg.getDate());
-  const awalMinggu = new Date(skrg.getTime() - (skrg.getDay() * 86400000));
-  const awalBulan = new Date(skrg.getFullYear(), skrg.getMonth(), 1);
-  const awalTahun = new Date(skrg.getFullYear(), 0, 1);
-
-  let hari = 0, minggu = 0, bulan = 0, tahun = 0;
-  
-  semuaData.forEach(doc => {
-    const d = doc.data();
-    if (!d.waktu_ditemukan) return;
-    const tgl = new Date(d.waktu_ditemukan.seconds * 1000);
-    if (tgl >= awalHari) hari++;
-    if (tgl >= awalMinggu) minggu++;
-    if (tgl >= awalBulan) bulan++;
-    if (tgl >= awalTahun) tahun++;
-  });
-
-  document.getElementById('jmlHari').textContent = hari;
-  document.getElementById('jmlMinggu').textContent = minggu;
-  document.getElementById('jmlBulan').textContent = bulan;
-  document.getElementById('jmlTahun').textContent = tahun;
-}
-
-function cekDataBaru() {
-  if (semuaData.length > jumlahDataSebelum && jumlahDataSebelum > 0) {
-    const dataBaru = semuaData.length - jumlahDataSebelum;
-    document.getElementById('kotakNotif').classList.add('aktif');
-    document.getElementById('infoNotif').textContent = 
-      `${dataBaru} data baru diterima • Total: ${semuaData.length}`;
+  <!-- MODAL DETAIL DIALOG -->
+  <div id="modalLatar" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center" onclick="if(event.target.id==='modalLatar') tutupDetail()">
+    <div class="glass-panel rounded-2xl border-2 border-slate-700 max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
       
-    setTimeout(() => {
-      document.getElementById('kotakNotif').classList.remove('aktif');
-    }, 10000);
-  }
-  jumlahDataSebelum = semuaData.length;
-}
+      <!-- Modal Header -->
+      <div class="p-4 px-5 bg-black border-b-2 border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-lg bg-red-950 border border-red-500 text-red-400 flex items-center justify-center text-sm shadow-md">
+            <i class="fa-solid fa-file-invoice"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-sm text-white tracking-wide">RINCIAN DATA VEHICLE</h3>
+            <p class="text-[10px] text-slate-300 font-medium">Database Real-time IP System</p>
+          </div>
+        </div>
+        <button onclick="tutupDetail()" class="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center transition border border-slate-700">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
 
-function mulaiHari() { const d = new Date(); d.setHours(0,0,0,0); return d; }
-function mulaiMinggu() { const d = new Date(); d.setDate(d.getDate() - d.getDay()); d.setHours(0,0,0,0); return d; }
-function dalam(timestamp, batas) {
-  if (!timestamp) return true;
-  return new Date(timestamp.seconds * 1000) >= batas;
-}
+      <!-- Modal Content Scrollable -->
+      <div id="modalIsi" class="p-4 sm:p-5 overflow-y-auto space-y-2 text-xs font-mono">
+        <!-- Rendered dynamically -->
+      </div>
 
-function ambilNilai(data, daftarKunci) {
-  for (const k of daftarKunci) {
-    if (data[k] && String(data[k]).trim() !== '') return String(data[k]).trim().toUpperCase();
-  }
-  return "-";
-}
-function ambilPlat(d) {
-  const k = ['NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL'];
-  let v = ambilNilai(d, k);
-  if (v === "-") {
-    const cocok = JSON.stringify(d).toUpperCase().match(/\b[A-Z]{1,2}\s*\d{1,4}\s*[A-Z]{0,3}\b/);
-    if (cocok) v = cocok[0];
-  }
-  return v;
-}
-function ambilNoka(d) { return ambilNilai(d, ['Noka','no_rangka','rangka','NoRangka','NORANGKA']); }
-function ambilNosin(d) { return ambilNilai(d, ['Nosin','no_mesin','mesin','NoMesin','NOMESIN']); }
+      <!-- Modal Footer Buttons -->
+      <div class="p-4 bg-black border-t-2 border-slate-800 flex flex-col sm:flex-row gap-2">
+        <button 
+          onclick="salinFormatLaporan()" 
+          class="sm:w-1/3 py-3 px-3 bg-slate-900 hover:bg-slate-800 active:scale-95 text-slate-100 font-bold rounded-xl transition text-xs flex items-center justify-center gap-2 border border-slate-700"
+        >
+          <i class="fa-solid fa-copy text-sm text-indigo-400"></i>
+          <span>SALIN TEKS</span>
+        </button>
+        <button 
+          id="btnWaModal" 
+          onclick="kirimWaDariModal()" 
+          class="sm:w-2/3 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black rounded-xl transition text-xs shadow-lg shadow-emerald-950 flex items-center justify-center gap-2"
+        >
+          <i class="fa-brands fa-whatsapp text-lg"></i>
+          <span>KIRIM WHATSAPP</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
-function formatWaktu(ts) {
-  if (!ts) return "-";
-  const d = new Date(ts.seconds * 1000);
-  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} — ${namaHari[d.getDay()]}, ${d.getDate()} ${namaBulan[d.getMonth()]}`;
-}
+  <!-- Footer Info -->
+  <footer class="py-4 text-center text-[11px] text-slate-500 font-mono font-bold border-t border-slate-900 bg-black">
+    DATABASE IP REAL-TIME • PUSAT KONTROL V2.5
+  </footer>
 
-// ✅ FORMAT PESAN WA — SUDAH DIRAPIKAN
-function buatPesanWa(d) {
-  const plat = ambilPlat(d);
-  const noka = ambilNoka(d);
-  const nosin = ambilNosin(d);
-  const waktu = d.waktu_ditemukan ? formatWaktu(d.waktu_ditemukan) : "-";
-  
-  const kunciDikecualikan = [
-    'waktu_ditemukan','NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL',
-    'Noka','no_rangka','rangka','NoRangka','NORANGKA',
-    'Nosin','no_mesin','mesin','NoMesin','NOMESIN'
-  ];
-  
-  let rincian = '';
-  for (const [k, v] of Object.entries(d)) {
-    if (kunciDikecualikan.includes(k)) continue;
-    let nilai = v;
-    if (nilai === null || nilai === undefined || nilai === "" || nilai === "null") {
-      nilai = "-";
-    } else if (typeof nilai === 'object') {
-      nilai = JSON.stringify(nilai);
+  <script>
+    const namaHari = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+    const namaBulan = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+
+    // System Access Key
+    const KUNCI_AKSES = "222222";
+
+    // Firebase Config
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSySyBonuHp4nd-YZKWV5IM_2HRCfJ2TQ4zJaY",
+      authDomain: "gen-lang-client-0221970857.firebaseapp.com",
+      projectId: "gen-lang-client-0221970857",
+      storageBucket: "gen-lang-client-0221970857.firebasestorage.app",
+      messagingSenderId: "483674298302",
+      appId: "1:483674298302:web:8c6ccf111af4de7bbecbef"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    const db = firebase.firestore();
+
+    let semuaData = [];
+    let pengamat = null;
+    let tabAktif = 'hari';
+    let jumlahDataSebelum = 0;
+    let docIdTerpilih = null;
+    let audioEnabled = true;
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let borderClass = 'border-slate-700 bg-black text-white';
+      let icon = 'fa-circle-info text-cyan-400';
+      
+      if (type === 'error') {
+        borderClass = 'border-red-500 bg-black text-red-300';
+        icon = 'fa-circle-exclamation text-red-500';
+      } else if (type === 'success') {
+        borderClass = 'border-emerald-400 bg-black text-emerald-300';
+        icon = 'fa-circle-check text-emerald-400';
+      }
+
+      toast.className = `pointer-events-auto p-3.5 px-4 rounded-xl border-2 ${borderClass} shadow-2xl flex items-center gap-3 text-xs font-bold animate-in slide-in-from-top-2 duration-200`;
+      toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i> <span>${message}</span>`;
+      
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'transition', 'duration-300');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
     }
-    rincian += `• ${k.toUpperCase().padEnd(18,' ')}: ${nilai}\n`;
-  }
-  
-  return `DATABASE IP REAL-TIME
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🚗 NOPOL   : ${plat}
-🔶 NOKA    : ${noka}
-🔷 NOSIN   : ${nosin}
-🕐 WAKTU   : ${waktu}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${rincian}Terima kasih..`;
-}
 
-function kirimWa(doc) {
-  const pesan = buatPesanWa(doc.data());
-  const url = `https://wa.me/?text=${encodeURIComponent(pesan)}`;
-  window.open(url, '_blank');
-}
+    function toggleShowPin() {
+      const pinInput = document.getElementById('kunci');
+      const icon = document.getElementById('iconShowPin');
+      if (pinInput.type === 'password') {
+        pinInput.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash text-sm';
+      } else {
+        pinInput.type = 'password';
+        icon.className = 'fa-solid fa-eye text-sm';
+      }
+    }
 
-function kirimWaDariModal() {
-  if (!docIdTerpilih) return;
-  const doc = semuaData.find(d => d.id === docIdTerpilih);
-  if (!doc) return;
-  kirimWa(doc);
-}
+    function perbaruiWaktuSistem() {
+      const skrg = new Date();
+      document.getElementById('jamSistem').textContent = 
+        [skrg.getHours(), skrg.getMinutes(), skrg.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+      document.getElementById('tglSistem').textContent = 
+        `${namaHari[skrg.getDay()]}, ${skrg.getDate()} ${namaBulan[skrg.getMonth()]} ${skrg.getFullYear()}`;
+    }
+    perbaruiWaktuSistem();
+    setInterval(perbaruiWaktuSistem, 1000);
 
-// ✅ MEMANTAU KOLEKSI "pencarian"
-function mulaiPantau() {
-  if (pengamat) pengamat();
-  
-  pengamat = db.collection('pencarian')
-    .orderBy('waktu_ditemukan', 'desc')
-    .limit(3000)
-    .onSnapshot(snap => {
-      semuaData = snap.docs;
-      document.getElementById('status').textContent = `✅ TERHUBUNG — ${snap.size} data tersimpan`;
-      document.getElementById('status').className = 'status';
+    function playNotificationChime() {
+      if (!audioEnabled) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+        osc.frequency.exponentialRampToValueAtTime(987.77, ctx.currentTime + 0.18); // B5
+
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.45);
+      } catch (e) {
+        console.log("Audio play blocked", e);
+      }
+    }
+
+    function toggleAudioAlert() {
+      audioEnabled = !audioEnabled;
+      const icon = document.getElementById('iconAudioSound');
+      const btn = document.getElementById('btnAudioSound');
+      if (audioEnabled) {
+        icon.className = 'fa-solid fa-bell text-lg text-emerald-400';
+        btn.classList.remove('opacity-50');
+        showToast('Suara notifikasi diaktifkan', 'success');
+      } else {
+        icon.className = 'fa-solid fa-bell-slash text-lg text-slate-500';
+        btn.classList.add('opacity-50');
+        showToast('Suara notifikasi dimatikan', 'info');
+      }
+    }
+
+    function masuk() {
+      const keyVal = document.getElementById('kunci').value.trim();
+      if (keyVal === KUNCI_AKSES) {
+        document.getElementById('layarMasuk').classList.add('hidden');
+        document.getElementById('lap').classList.remove('hidden');
+        showToast('Akses Diterima. Selamat datang!', 'success');
+        mulaiPantau();
+      } else {
+        showToast('Kunci akses tidak valid!', 'error');
+        document.getElementById('kunci').value = "";
+        document.getElementById('kunci').focus();
+      }
+    }
+
+    function hitungStatistik() {
+      const skrg = new Date();
+      const awalHari = new Date(skrg.getFullYear(), skrg.getMonth(), skrg.getDate());
+      const awalMinggu = new Date(skrg.getTime() - (skrg.getDay() * 86400000));
+      const awalBulan = new Date(skrg.getFullYear(), skrg.getMonth(), 1);
+      const awalTahun = new Date(skrg.getFullYear(), 0, 1);
+
+      let hari = 0, minggu = 0, bulan = 0, tahun = 0;
       
-      hitungStatistik();
-      cekDataBaru();
+      semuaData.forEach(doc => {
+        const d = doc.data();
+        if (!d.waktu_ditemukan) return;
+        const tgl = new Date(d.waktu_ditemukan.seconds * 1000);
+        if (tgl >= awalHari) hari++;
+        if (tgl >= awalMinggu) minggu++;
+        if (tgl >= awalBulan) bulan++;
+        if (tgl >= awalTahun) tahun++;
+      });
+
+      document.getElementById('jmlHari').textContent = hari;
+      document.getElementById('jmlMinggu').textContent = minggu;
+      document.getElementById('jmlBulan').textContent = bulan;
+      document.getElementById('jmlTahun').textContent = tahun;
+    }
+
+    function cekDataBaru() {
+      if (semuaData.length > jumlahDataSebelum && jumlahDataSebelum > 0) {
+        const dataBaru = semuaData.length - jumlahDataSebelum;
+        document.getElementById('kotakNotif').classList.remove('hidden');
+        document.getElementById('infoNotif').textContent = 
+          `${dataBaru} record baru telah ditambahkan • Total: ${semuaData.length} records`;
+        
+        playNotificationChime();
+
+        setTimeout(() => {
+          document.getElementById('kotakNotif').classList.add('hidden');
+        }, 10000);
+      }
+      jumlahDataSebelum = semuaData.length;
+    }
+
+    function mulaiHari() { const d = new Date(); d.setHours(0,0,0,0); return d; }
+    function mulaiMinggu() { const d = new Date(); d.setDate(d.getDate() - d.getDay()); d.setHours(0,0,0,0); return d; }
+    
+    function dalam(timestamp, batas) {
+      if (!timestamp) return true;
+      return new Date(timestamp.seconds * 1000) >= batas;
+    }
+
+    function ambilNilai(data, daftarKunci) {
+      for (const k of daftarKunci) {
+        if (data[k] && String(data[k]).trim() !== '') return String(data[k]).trim().toUpperCase();
+      }
+      return "-";
+    }
+
+    function ambilPlat(d) {
+      const k = ['NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL'];
+      let v = ambilNilai(d, k);
+      if (v === "-") {
+        const cocok = JSON.stringify(d).toUpperCase().match(/\b[A-Z]{1,2}\s*\d{1,4}\s*[A-Z]{0,3}\b/);
+        if (cocok) v = cocok[0];
+      }
+      return v;
+    }
+
+    function ambilNoka(d) { return ambilNilai(d, ['Noka','no_rangka','rangka','NoRangka','NORANGKA']); }
+    function ambilNosin(d) { return ambilNilai(d, ['Nosin','no_mesin','mesin','NoMesin','NOMESIN']); }
+
+    function formatWaktu(ts) {
+      if (!ts) return "-";
+      const d = new Date(ts.seconds * 1000);
+      return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} — ${namaHari[d.getDay()]}, ${d.getDate()} ${namaBulan[d.getMonth()]}`;
+    }
+
+    function buatPesanWa(d) {
+      const plat = ambilPlat(d);
+      const noka = ambilNoka(d);
+      const nosin = ambilNosin(d);
+      const waktu = d.waktu_ditemukan ? formatWaktu(d.waktu_ditemukan) : "-";
+      
+      const kunciDikecualikan = [
+        'waktu_ditemukan','NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL',
+        'Noka','no_rangka','rangka','NoRangka','NORANGKA',
+        'Nosin','no_mesin','mesin','NoMesin','NOMESIN'
+      ];
+      
+      let rincian = '';
+      for (const [k, v] of Object.entries(d)) {
+        if (kunciDikecualikan.includes(k)) continue;
+        let nilai = v;
+        if (nilai === null || nilai === undefined || nilai === "" || nilai === "null") {
+          nilai = "-";
+        } else if (typeof nilai === 'object') {
+          nilai = JSON.stringify(nilai);
+        }
+        rincian += `• ${k.toUpperCase().padEnd(16,' ')}: ${nilai}\n`;
+      }
+      
+      return `*DATABASE IP REAL-TIME*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🚗 *NOPOL*   : ${plat}\n🔶 *NOKA*    : ${noka}\n🔷 *NOSIN*   : ${nosin}\n🕐 *WAKTU*   : ${waktu}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${rincian}\n_Terima kasih.._`;
+    }
+
+    function kirimWa(doc) {
+      const pesan = buatPesanWa(doc.data());
+      const url = `https://wa.me/?text=${encodeURIComponent(pesan)}`;
+      window.open(url, '_blank');
+    }
+
+    function kirimWaDariModal() {
+      if (!docIdTerpilih) return;
+      const doc = semuaData.find(d => d.id === docIdTerpilih);
+      if (!doc) return;
+      kirimWa(doc);
+    }
+
+    function salinFormatLaporan() {
+      if (!docIdTerpilih) return;
+      const doc = semuaData.find(d => d.id === docIdTerpilih);
+      if (!doc) return;
+      
+      const text = buatPesanWa(doc.data());
+      
+      // ExecCommand fallback for iframe safety
+      const dummy = document.createElement("textarea");
+      document.body.appendChild(dummy);
+      dummy.value = text;
+      dummy.select();
+      document.execCommand("copy");
+      document.body.removeChild(dummy);
+
+      showToast("Teks laporan berhasil disalin!", "success");
+    }
+
+    function mulaiPantau() {
+      if (pengamat) pengamat();
+      
+      const statusText = document.getElementById('statusText');
+      const indicatorDot = document.getElementById('indicatorDot');
+      
+      statusText.textContent = "Menghubungkan ke server...";
+      indicatorDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping";
+
+      pengamat = db.collection('pencarian')
+        .orderBy('waktu_ditemukan', 'desc')
+        .limit(3000)
+        .onSnapshot(snap => {
+          semuaData = snap.docs;
+          statusText.textContent = `TERHUBUNG • ${snap.size} data tersimpan`;
+          indicatorDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+          
+          hitungStatistik();
+          cekDataBaru();
+          tampil();
+        }, err => {
+          statusText.textContent = `Gagal: ${err.message}`;
+          indicatorDot.className = "w-2.5 h-2.5 rounded-full bg-red-500";
+          showToast(`Firestore Error: ${err.message}`, 'error');
+        });
+    }
+
+    function muatUlang() {
+      jumlahDataSebelum = 0;
+      mulaiPantau();
+      showToast('Memuat ulang koneksi real-time...', 'info');
+    }
+
+    function clearSearch() {
+      document.getElementById('cariInput').value = '';
+      document.getElementById('btnClearSearch').classList.add('hidden');
       tampil();
-    }, err => {
-      document.getElementById('status').textContent = `⚠️ ${err.message}`;
-      document.getElementById('status').className = 'status salah';
-    });
-}
-
-function muatUlang() {
-  jumlahDataSebelum = 0;
-  mulaiPantau();
-  document.getElementById('status').textContent = '🔄 Memuat ulang...';
-}
-
-// ✅ FILTER SUDAH DIPERBAIKI
-function tampil() {
-  let dataFilter = [...semuaData];
-
-  if (tabAktif === 'hari') {
-    dataFilter = dataFilter.filter(d => dalam(d.data().waktu_ditemukan, mulaiHari()));
-  } else if (tabAktif === 'minggu') {
-    dataFilter = dataFilter.filter(d => dalam(d.data().waktu_ditemukan, mulaiMinggu()));
-  }
-
-  const el = document.getElementById('daftarUtama');
-  if (!dataFilter.length) {
-    el.innerHTML = '<div class="kosong">Belum ada data di periode ini</div>';
-    return;
-  }
-
-  const sepuluhMenitLalu = Date.now() - 600000;
-  
-  el.innerHTML = dataFilter.map(doc => {
-    const d = doc.data();
-    const plat = ambilPlat(d);
-    const noka = ambilNoka(d);
-    const nosin = ambilNosin(d);
-    const waktu = formatWaktu(d.waktu_ditemukan);
-    
-    let kelasBaru = '';
-    if (d.waktu_ditemukan && (d.waktu_ditemukan.seconds * 1000) > sepuluhMenitLalu) {
-      kelasBaru = 'baru';
     }
-    
-    return `
-      <div class="baris ${kelasBaru}" onclick="bukaDetail('${doc.id}')">
-        <div class="plat">${plat}</div>
-        <div class="rangka">${noka}</div>
-        <div class="mesin">${nosin}</div>
-        <div class="waktu">${waktu}</div>
-      </div>`;
-  }).join('');
-}
 
-function bukaDetail(id) {
-  docIdTerpilih = id;
-  const doc = semuaData.find(d => d.id === id);
-  if (!doc) return;
-  const d = doc.data();
-  
-  let html = '';
-  for (const [k, v] of Object.entries(d)) {
-    let nilai = v;
-    if (nilai === null || nilai === undefined || nilai === "") {
-      nilai = "-";
-    } else if (typeof nilai === 'object') {
-      nilai = JSON.stringify(nilai, null, 2);
+    function tampil() {
+      let dataFilter = [...semuaData];
+      const keyword = document.getElementById('cariInput').value.trim().toLowerCase();
+      const btnClear = document.getElementById('btnClearSearch');
+
+      if (keyword.length > 0) {
+        btnClear.classList.remove('hidden');
+      } else {
+        btnClear.classList.add('hidden');
+      }
+
+      // Filter by Tab
+      if (tabAktif === 'hari') {
+        dataFilter = dataFilter.filter(d => dalam(d.data().waktu_ditemukan, mulaiHari()));
+      } else if (tabAktif === 'minggu') {
+        dataFilter = dataFilter.filter(d => dalam(d.data().waktu_ditemukan, mulaiMinggu()));
+      }
+
+      // Filter by Keyword
+      if (keyword) {
+        dataFilter = dataFilter.filter(doc => {
+          const d = doc.data();
+          const str = JSON.stringify(d).toLowerCase();
+          return str.includes(keyword);
+        });
+      }
+
+      const el = document.getElementById('daftarUtama');
+      if (!dataFilter.length) {
+        el.innerHTML = `
+          <div class="p-12 text-center text-slate-400 space-y-2 font-sans">
+            <i class="fa-solid fa-folder-open text-4xl text-slate-700 mb-1"></i>
+            <p class="text-xs font-bold text-slate-300">Tidak ada data ditemukan pada periode / pencarian ini.</p>
+          </div>`;
+        return;
+      }
+
+      const sepuluhMenitLalu = Date.now() - 600000;
+      
+      el.innerHTML = dataFilter.map(doc => {
+        const d = doc.data();
+        const plat = ambilPlat(d);
+        const noka = ambilNoka(d);
+        const nosin = ambilNosin(d);
+        const waktu = formatWaktu(d.waktu_ditemukan);
+        
+        let isBaru = false;
+        if (d.waktu_ditemukan && (d.waktu_ditemukan.seconds * 1000) > sepuluhMenitLalu) {
+          isBaru = true;
+        }
+        
+        return `
+          <div 
+            onclick="bukaDetail('${doc.id}')" 
+            class="p-3 px-4 hover:bg-slate-900 transition cursor-pointer flex flex-col md:grid md:grid-cols-12 gap-2 md:items-center ${isBaru ? 'bg-emerald-950/40 border-l-4 border-l-emerald-400' : ''}"
+          >
+            <!-- Mobile Row Title / Nopol -->
+            <div class="col-span-3 flex items-center justify-between md:justify-start">
+              <div class="flex items-center gap-2">
+                <span class="text-emerald-400 font-extrabold text-sm tracking-wide drop-shadow-[0_0_4px_rgba(52,211,153,0.3)]">${plat}</span>
+                ${isBaru ? '<span class="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/30 text-emerald-300 border border-emerald-400 font-sans font-black tracking-wider animate-pulse">BARU</span>' : ''}
+              </div>
+              <span class="md:hidden text-[10px] text-slate-400 font-sans font-medium">${waktu}</span>
+            </div>
+
+            <!-- Noka & Nosin -->
+            <div class="col-span-3 text-amber-300 font-bold truncate">
+              <span class="md:hidden text-[10px] text-slate-400 font-sans block">NOKA:</span>
+              ${noka}
+            </div>
+            
+            <div class="col-span-3 text-cyan-300 font-bold truncate">
+              <span class="md:hidden text-[10px] text-slate-400 font-sans block">NOSIN:</span>
+              ${nosin}
+            </div>
+
+            <!-- Timestamp Desktop -->
+            <div class="hidden md:block col-span-3 text-right text-slate-300 text-[11px] font-sans font-medium">
+              ${waktu}
+            </div>
+          </div>`;
+      }).join('');
     }
-    html += `<div class="dtl"><span class="lbl">${k.toUpperCase()}</span>${nilai}</div>`;
-  }
-  document.getElementById('modalIsi').innerHTML = html;
-  document.getElementById('modalLatar').classList.remove('sembunyi');
-}
-function tutupDetail() {
-  document.getElementById('modalLatar').classList.add('sembunyi');
-  docIdTerpilih = null;
-}
 
-function buka(nama) {
-  tabAktif = nama;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('aktif'));
-  document.getElementById(`t${nama[0].toUpperCase()}${nama.slice(1)}`).classList.add('aktif');
-  tampil();
-}
-</script>
+    function bukaDetail(id) {
+      docIdTerpilih = id;
+      const doc = semuaData.find(d => d.id === id);
+      if (!doc) return;
+      const d = doc.data();
+      
+      let html = '';
+      for (const [k, v] of Object.entries(d)) {
+        let nilai = v;
+        if (nilai === null || nilai === undefined || nilai === "") {
+          nilai = "-";
+        } else if (typeof nilai === 'object') {
+          nilai = JSON.stringify(nilai, null, 2);
+        }
+
+        let isHighlight = ['nopol','plat','noka','nosin','no_pol','no_rangka','no_mesin'].includes(k.toLowerCase());
+
+        html += `
+          <div class="p-2.5 px-3.5 rounded-lg bg-black border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <span class="text-slate-400 uppercase text-[10px] tracking-wider font-sans font-extrabold">${k}</span>
+            <span class="${isHighlight ? 'text-emerald-400 font-extrabold text-sm' : 'text-slate-100 font-bold'} break-all">${nilai}</span>
+          </div>`;
+      }
+      document.getElementById('modalIsi').innerHTML = html;
+      document.getElementById('modalLatar').classList.remove('hidden');
+    }
+
+    function tutupDetail() {
+      document.getElementById('modalLatar').classList.add('hidden');
+      docIdTerpilih = null;
+    }
+
+    function buka(nama) {
+      tabAktif = nama;
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('bg-red-600', 'text-white', 'shadow-md');
+        b.classList.add('text-slate-300');
+      });
+      
+      const activeBtn = document.getElementById(`t${nama[0].toUpperCase()}${nama.slice(1)}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-red-600', 'text-white', 'shadow-md');
+        activeBtn.classList.remove('text-slate-300');
+      }
+      tampil();
+    }
+
+    // Export Table to CSV
+    function eksporCSV() {
+      if (!semuaData.length) {
+        showToast("Tidak ada data untuk diekspor!", "error");
+        return;
+      }
+
+      let csv = "NOPOL,NOKA,NOSIN,WAKTU\n";
+      semuaData.forEach(doc => {
+        const d = doc.data();
+        const plat = ambilPlat(d).replace(/,/g, '');
+        const noka = ambilNoka(d).replace(/,/g, '');
+        const nosin = ambilNosin(d).replace(/,/g, '');
+        const waktu = d.waktu_ditemukan ? formatWaktu(d.waktu_ditemukan).replace(/,/g, '') : '-';
+        csv += `"${plat}","${noka}","${nosin}","${waktu}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `database_ip_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("File CSV berhasil diunduh!", "success");
+    }
+
+    // Set initial active tab highlight
+    buka('hari');
+  </script>
 </body>
 </html>
