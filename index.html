@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DATABASE IP REAL-TIME - PUSAT KONTROL V3.8</title>
 
-  <!-- Tailwind CSS Config & CDN -->
   <script>
     window.tailwind = {
       darkMode: 'class',
@@ -98,7 +97,6 @@
 </head>
 <body id="bodyRoot" class="text-slate-100 min-h-screen flex flex-col justify-between antialiased selection:bg-red-500 selection:text-white">
 
-  <!-- Dynamic Toast Container -->
   <div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 no-print"></div>
 
   <!-- Emergency Siren Overlay Banner -->
@@ -112,7 +110,6 @@
     </button>
   </div>
 
-  <!-- Main App Wrapper -->
   <div class="max-w-7xl w-full mx-auto p-3 sm:p-5 flex-grow">
 
     <!-- LOGIN SCREEN -->
@@ -344,7 +341,10 @@
       <div id="modalIsi" class="p-4 sm:p-5 overflow-y-auto space-y-2 text-xs font-mono"></div>
       <div class="p-4 bg-black border-t-2 border-slate-800 flex gap-2">
         <button onclick="salinFormatLaporan()" class="w-1/2 py-3 bg-slate-900 hover:bg-slate-800 text-slate-100 font-bold rounded-xl transition text-xs border border-slate-700">SALIN TEKS</button>
-        <button onclick="kirimWaDariModal()" class="w-1/2 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl transition text-xs shadow-lg shadow-emerald-950">WHATSAPP</button>
+        <button onclick="kirimWaDariModal()" class="w-1/2 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl transition text-xs shadow-lg shadow-emerald-950 flex items-center justify-center gap-2">
+          <i class="fa-brands fa-whatsapp text-base"></i>
+          <span>WHATSAPP</span>
+        </button>
       </div>
     </div>
   </div>
@@ -539,7 +539,7 @@
       if (!ts) return "-";
       let d = ts.seconds ? new Date(ts.seconds * 1000) : new Date(ts);
       if (isNaN(d.getTime())) return "-";
-      return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} — ${namaHari[d.getDay()]}, ${d.getDate()} ${namaBulan[d.getMonth()]}`;
+      return `<span class="text-white font-mono">${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} — ${namaHari[d.getDay()]}, ${d.getDate()} ${namaBulan[d.getMonth()]}</span>`;
     }
 
     function hitungStatistik() {
@@ -660,8 +660,57 @@
 
     function bukaModalWatchlist() { document.getElementById('modalWatchlist').classList.remove('hidden'); }
     function tutupModalWatchlist() { document.getElementById('modalWatchlist').classList.add('hidden'); }
-    function salinFormatLaporan() { showToast('Disalin', 'success'); }
-    function kirimWaFromModal() { window.open('https://wa.me/?text=Laporan', '_blank'); }
+
+    function buatPesanWa(d) {
+      const plat = ambilPlat(d);
+      const noka = ambilNoka(d);
+      const nosin = ambilNosin(d);
+      const wilayah = ambilWilayah(d);
+      const waktu = d.waktu_ditemukan ? formatWaktu(d.waktu_ditemukan).replace(/<[^>]*>/g, '') : "-";
+      
+      let rincian = '';
+      for (const [k, v] of Object.entries(d)) {
+        if (['waktu_ditemukan','NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL','Noka','no_rangka','rangka','NoRangka','NORANGKA','Nosin','no_mesin','mesin','NoMesin','NOMESIN'].includes(k)) continue;
+        rincian += `• ${k.toUpperCase().padEnd(16,' ')}: ${v}\n`;
+      }
+      
+      return `PUSAT KONTROL DATABASE IP
+━━━━━━━━━━━━━━━━━━━
+🚗 NOPOL   : ${plat}
+📍 WILAYAH : ${wilayah}
+🔶 NOKA    : ${noka}
+🔷 NOSIN   : ${nosin}
+🕐 WAKTU   : ${waktu}
+━━━━━━━━━━━━━━━━━━━
+${rincian}Terima kasih.`;
+    }
+
+    function salinFormatLaporan() {
+      if (!docIdTerpilih) return;
+      const doc = semuaData.find(d => d.id === docIdTerpilih);
+      if (!doc) return;
+      const teks = buatPesanWa(doc.data());
+      const ta = document.createElement('textarea');
+      ta.value = teks;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('Teks laporan disalin!', 'success');
+      } catch(e) {
+        showToast('Gagal menyalin', 'error');
+      }
+      document.body.removeChild(ta);
+    }
+
+    function kirimWaDariModal() {
+      if (!docIdTerpilih) return;
+      const doc = semuaData.find(d => d.id === docIdTerpilih);
+      if (!doc) return;
+      const pesan = buatPesanWa(doc.data());
+      const url = `https://wa.me/?text=${encodeURIComponent(pesan)}`;
+      window.open(url, '_blank');
+    }
 
     cekSesiOtomatis();
   </script>
