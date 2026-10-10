@@ -2,7 +2,7 @@
 <html lang="id" class="dark h-full bg-black">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>DATABASE IP REAL-TIME - PUSAT KONTROL V3.8</title>
 
   <script>
@@ -40,6 +40,11 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 
   <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
     body {
       font-family: 'Inter', sans-serif;
       background-color: #000000 !important;
@@ -50,8 +55,8 @@
     }
 
     ::-webkit-scrollbar {
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
     }
     ::-webkit-scrollbar-track {
       background: #000000;
@@ -66,7 +71,7 @@
 
     @keyframes statPop {
       0% { transform: scale(1); }
-      50% { transform: scale(1.15); filter: brightness(1.4); }
+      50% { transform: scale(1.12); filter: brightness(1.3); }
       100% { transform: scale(1); }
     }
 
@@ -86,6 +91,7 @@
     .glass-panel {
       background: rgba(10, 10, 14, 0.98);
       backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
@@ -97,6 +103,7 @@
 </head>
 <body id="bodyRoot" class="text-slate-100 min-h-screen flex flex-col justify-between antialiased selection:bg-red-500 selection:text-white">
 
+  <!-- Toast Notification Container -->
   <div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 no-print"></div>
 
   <!-- Emergency Siren Overlay Banner -->
@@ -105,7 +112,7 @@
       <i class="fa-solid fa-triangle-exclamation text-xl animate-spin"></i>
       <span id="emergencyMsg">PERINGATAN TARGET KHUSUS TERDETEKSI!</span>
     </div>
-    <button onclick="matikanSirene()" class="bg-black text-red-400 text-xs px-3 py-1.5 rounded-lg border border-red-500 hover:bg-slate-900">
+    <button onclick="matikanSirene()" class="bg-black text-red-400 text-xs px-3 py-1.5 rounded-lg border border-red-500 hover:bg-slate-900 active:scale-95 transition">
       MATIKAN SIRINE
     </button>
   </div>
@@ -194,14 +201,15 @@
           </div>
         </div>
 
-        <!-- Live Clock, Voice & Audio Controls -->
+        <!-- Live Clock (Warna Putih), Voice & Audio Controls -->
         <div class="flex flex-wrap items-center justify-between md:justify-end gap-2 bg-black/90 p-2.5 px-3 sm:px-4 rounded-xl border border-slate-800">
           <div class="text-left md:text-right pr-2 border-r border-slate-800">
-            <div id="jamSistem" class="text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-wider drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]">00:00:00</div>
+            <!-- Tampilan Jam Dibuat Putih Bertema Neon Ringan -->
+            <div id="jamSistem" class="text-xl sm:text-2xl font-black text-white font-mono tracking-wider drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">00:00:00</div>
             <div id="tglSistem" class="text-[11px] text-slate-300 font-bold">Senin, 01 Januari 2026</div>
           </div>
 
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-1 flex-wrap">
             <!-- Test Audio & Floating Toast Button -->
             <button 
               onclick="ujiNotifikasiDanSuara()" 
@@ -303,24 +311,49 @@
           </div>
         </div>
 
+        <!-- KOLOM PENCARIAN CEPAT (LIVE SEARCH BAR) -->
+        <div class="glass-panel rounded-2xl p-3 border-2 border-slate-800 shadow-xl flex items-center gap-3">
+          <div class="text-slate-400 pl-2">
+            <i class="fa-solid fa-magnifying-glass text-sm text-red-500 animate-pulse"></i>
+          </div>
+          <input 
+            type="text" 
+            id="inCari" 
+            oninput="tampil()" 
+            placeholder="Ketik Nopol, Noka, Nosin, Wilayah, Seri, atau Nama Pemilik..." 
+            class="w-full bg-transparent text-white text-xs sm:text-sm font-mono placeholder-slate-500 outline-none font-bold uppercase"
+          >
+          <button 
+            onclick="bersihkanPencarian()" 
+            title="Bersihkan Pencarian"
+            class="text-slate-500 hover:text-white px-2 py-1 text-xs transition"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
         <!-- Data Table View (NO, WILAYAH, NOPOL, SERI, NOKA, NOSIN, WAKTU PENGECEKAN) -->
         <div class="glass-panel rounded-2xl overflow-hidden border-2 border-slate-800 shadow-2xl">
-          <!-- Desktop Table Header -->
-          <div class="grid grid-cols-12 gap-1 p-3.5 px-4 bg-slate-950 text-[11px] font-black uppercase tracking-wider text-slate-300 border-b-2 border-slate-800 text-center">
-            <div class="col-span-1">NO</div>
-            <div class="col-span-2">WILAYAH</div>
-            <div class="col-span-2">NOPOL</div>
-            <div class="col-span-1">SERI</div>
-            <div class="col-span-2">NOKA</div>
-            <div class="col-span-2">NOSIN</div>
-            <div class="col-span-2">WAKTU PENGECEKAN</div>
-          </div>
+          <div class="overflow-x-auto">
+            <div class="min-w-[680px]">
+              <!-- Desktop Table Header -->
+              <div class="grid grid-cols-12 gap-1 p-3.5 px-4 bg-slate-950 text-[11px] font-black uppercase tracking-wider text-slate-300 border-b-2 border-slate-800 text-center">
+                <div class="col-span-1">NO</div>
+                <div class="col-span-2">WILAYAH</div>
+                <div class="col-span-2">NOPOL</div>
+                <div class="col-span-1">SERI</div>
+                <div class="col-span-2">NOKA</div>
+                <div class="col-span-2">NOSIN</div>
+                <div class="col-span-2">WAKTU PENGECEKAN</div>
+              </div>
 
-          <!-- Scrollable List -->
-          <div id="daftarUtama" class="max-h-[540px] overflow-y-auto divide-y divide-slate-800/80 font-mono text-xs">
-            <div class="p-12 text-center text-slate-400 space-y-3">
-              <i class="fa-solid fa-circle-notch fa-spin text-3xl text-red-500"></i>
-              <p class="font-sans text-xs font-semibold">Sedang memuat database Firestore secara real-time...</p>
+              <!-- Scrollable List -->
+              <div id="daftarUtama" class="max-h-[540px] overflow-y-auto divide-y divide-slate-800/80 font-mono text-xs">
+                <div class="p-12 text-center text-slate-400 space-y-3">
+                  <i class="fa-solid fa-circle-notch fa-spin text-3xl text-red-500"></i>
+                  <p class="font-sans text-xs font-semibold">Sedang memuat database Firestore secara real-time...</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -329,19 +362,25 @@
     </div>
   </div>
 
-  <!-- MODAL DETAIL DIALOG -->
+  <!-- MODAL DETAIL DIALOG (FORMAT JSON SINTAKS TERSTRUKTUR) -->
   <div id="modalLatar" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center no-print" onclick="if(event.target.id==='modalLatar') tutupDetail()">
     <div class="glass-panel rounded-2xl border-2 border-slate-700 max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
       <div class="p-4 px-5 bg-black border-b-2 border-slate-800 flex items-center justify-between">
-        <h3 class="font-black text-sm text-white tracking-wide">RINCIAN DATA VEHICLE</h3>
+        <h3 class="font-black text-sm text-white tracking-wide flex items-center gap-2">
+          <i class="fa-solid fa-code text-cyan-400"></i>
+          <span>RINCIAN DATA VEHICLE (JSON)</span>
+        </h3>
         <button onclick="tutupDetail()" class="w-8 h-8 rounded-lg bg-slate-900 text-slate-300 hover:text-white flex items-center justify-center transition border border-slate-700">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
       <div id="modalIsi" class="p-4 sm:p-5 overflow-y-auto space-y-2 text-xs font-mono"></div>
       <div class="p-4 bg-black border-t-2 border-slate-800 flex gap-2">
-        <button onclick="salinFormatLaporan()" class="w-1/2 py-3 bg-slate-900 hover:bg-slate-800 text-slate-100 font-bold rounded-xl transition text-xs border border-slate-700">SALIN TEKS</button>
-        <button onclick="kirimWaDariModal()" class="w-1/2 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl transition text-xs shadow-lg shadow-emerald-950 flex items-center justify-center gap-2">
+        <button onclick="salinJsonMentah()" class="w-1/2 py-3 bg-slate-900 hover:bg-slate-800 text-slate-100 font-bold rounded-xl transition text-xs border border-slate-700 active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-copy"></i>
+          <span>SALIN JSON</span>
+        </button>
+        <button onclick="kirimWaDariModal()" class="w-1/2 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl transition text-xs shadow-lg shadow-emerald-950 flex items-center justify-center gap-2 active:scale-95">
           <i class="fa-brands fa-whatsapp text-base"></i>
           <span>WHATSAPP</span>
         </button>
@@ -357,13 +396,25 @@
         <button onclick="tutupModalInput()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <div class="space-y-3 font-mono text-xs">
-        <div><label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">NOPOL</label><input type="text" id="inNopol" placeholder="B 1234 ABC" class="w-full bg-black border border-slate-700 rounded-lg p-2.5 text-white font-bold uppercase outline-none"></div>
-        <div><label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">NOKA</label><input type="text" id="inNoka" placeholder="Nomor Rangka" class="w-full bg-black border border-slate-700 rounded-lg p-2.5 text-amber-300 font-bold uppercase outline-none"></div>
-        <div><label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">NOSIN</label><input type="text" id="inNosin" placeholder="Nomor Mesin" class="w-full bg-black border border-slate-700 rounded-lg p-2.5 text-cyan-300 font-bold uppercase outline-none"></div>
-        <div><label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">WILAYAH</label><input type="text" id="inWilayah" placeholder="Contoh: Jakarta / Jabar" class="w-full bg-black border border-slate-700 rounded-lg p-2.5 text-emerald-300 font-bold uppercase outline-none"></div>
-        <div><label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">SERI</label><input type="text" id="inSeri" placeholder="Contoh: A / B / X" class="w-full bg-black border border-slate-700 rounded-lg p-2.5 text-fuchsia-300 font-bold uppercase outline-none"></div>
+        <div><label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">NOPOL</label><input type="text" id="inNopol" placeholder="B 1234 ABC" class="w-full bg-black border border-slate-700 rounded-lg p-2.5 text-white font-bold uppercase outline-none focus:border-red-500"></div>
+        <div><label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">NOKA</label><input type="text" id="inNoka" placeholder="Nomor Rangka" class="w-full bg-black border border-slate-700 rounded-lg p-2.5 text-amber-300 font-bold uppercase outline-none focus:border-amber-500"></div>
+        <div><label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">NOSIN</label><input type="text" id="inNosin" placeholder="Nomor Mesin" class="w-full bg-black border border-slate-700 rounded-lg p-2.5 text-cyan-300 font-bold uppercase outline-none focus:border-cyan-500"></div>
+        <div><label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">WILAYAH</label><input type="text" id="inWilayah" placeholder="Contoh: Jakarta / Jabar" class="w-full bg-black border border-slate-700 rounded-lg p-2.5 text-emerald-300 font-bold uppercase outline-none focus:border-emerald-500"></div>
+        <div><label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">SERI</label><input type="text" id="inSeri" placeholder="Contoh: A / B / X" class="w-full bg-black border border-slate-700 rounded-lg p-2.5 text-fuchsia-300 font-bold uppercase outline-none focus:border-fuchsia-500"></div>
+        <!-- FITUR GEOTAGGING GPS & PETA LOKASI -->
+        <div>
+          <label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">TITIK LOKASI (GEOTAGGING GPS)</label>
+          <div class="flex gap-2">
+            <input type="text" id="inLokasi" placeholder="Koordinat GPS / Otomatis" readonly class="flex-1 bg-black border border-slate-700 rounded-lg p-2.5 text-emerald-400 font-bold font-mono outline-none text-xs">
+            <button type="button" onclick="dapatkanGps()" class="px-3 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-location-dot text-xs"></i>
+              <span>AMBIL GPS</span>
+            </button>
+          </div>
+          <input type="hidden" id="inMapsUrl" value="">
+        </div>
       </div>
-      <button onclick="simpanDataBaru()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl transition text-xs shadow-lg">SIMPAN</button>
+      <button onclick="simpanDataBaru()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl transition text-xs shadow-lg active:scale-95">SIMPAN DATA</button>
     </div>
   </div>
 
@@ -371,11 +422,19 @@
   <div id="modalWatchlist" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center no-print" onclick="if(event.target.id==='modalWatchlist') tutupModalWatchlist()">
     <div class="glass-panel rounded-2xl border-2 border-red-700 max-w-md w-full p-5 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="font-black text-sm text-red-400">DAFTAR TARGET (WATCHLIST)</h3>
+        <h3 class="font-black text-sm text-red-400 flex items-center gap-2">
+          <i class="fa-solid fa-bullseye text-red-500"></i>
+          <span>DAFTAR TARGET (WATCHLIST)</span>
+        </h3>
         <button onclick="tutupModalWatchlist()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
-      <div class="flex gap-2"><input type="text" id="inWatchlistNopol" placeholder="B 1011 NOC" class="flex-1 bg-black border border-slate-700 rounded-lg p-2 text-white font-mono text-xs uppercase outline-none"><button onclick="tambahWatchlist()" class="px-4 bg-red-600 text-white font-bold text-xs rounded-lg">TAMBAH</button></div>
-      <div id="listWatchlist" class="max-h-48 overflow-y-auto space-y-2 border border-slate-800 p-2 rounded-lg font-mono text-xs"><div class="text-slate-500 text-center py-4">Belum ada target</div></div>
+      <div class="flex gap-2">
+        <input type="text" id="inWatchlistNopol" placeholder="B 1011 NOC" class="flex-1 bg-black border border-slate-700 rounded-lg p-2 text-white font-mono text-xs uppercase outline-none focus:border-red-500">
+        <button onclick="tambahWatchlist()" class="px-4 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-lg active:scale-95 transition">TAMBAH</button>
+      </div>
+      <div id="listWatchlist" class="max-h-48 overflow-y-auto space-y-2 border border-slate-800 p-2 rounded-lg font-mono text-xs">
+        <div class="text-slate-500 text-center py-4">Belum ada target</div>
+      </div>
     </div>
   </div>
 
@@ -404,6 +463,9 @@
     const db = firebase.firestore();
     const auth = firebase.auth();
 
+    // Enable Firestore Offline Cache for instant loading
+    db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+
     let currentUserId = null;
     auth.onAuthStateChanged(user => {
       if (user) currentUserId = user.uid;
@@ -416,6 +478,7 @@
     let audioEnabled = true;
     let voiceAnnounceEnabled = true;
     let sireneAktif = false;
+    let sireneInterval = null;
     let audioCtx = null;
     let isInitialLoad = true;
 
@@ -425,8 +488,10 @@
       const skrg = new Date();
       const jam = [skrg.getHours(), skrg.getMinutes(), skrg.getSeconds()].map(n => String(n).padStart(2, '0')).join(':');
       const tgl = `${namaHari[skrg.getDay()]}, ${skrg.getDate()} ${namaBulan[skrg.getMonth()]} ${skrg.getFullYear()}`;
-      document.getElementById('jamSistem').textContent = jam;
-      document.getElementById('tglSistem').textContent = tgl;
+      const elJam = document.getElementById('jamSistem');
+      const elTgl = document.getElementById('tglSistem');
+      if (elJam) elJam.textContent = jam;
+      if (elTgl) elTgl.textContent = tgl;
     }
     perbaruiWaktuSistem();
     setInterval(perbaruiWaktuSistem, 1000);
@@ -441,6 +506,7 @@
       } catch (e) {}
     }
     document.addEventListener('click', unlockAudioContext);
+    document.addEventListener('touchstart', unlockAudioContext);
 
     function showToast(message, type = 'info') {
       const container = document.getElementById('toastContainer');
@@ -471,6 +537,42 @@
       } catch (e) {}
     }
 
+    function picuSirene(platTarget) {
+      if (sireneAktif) return;
+      sireneAktif = true;
+      document.getElementById('bodyRoot').classList.add('siren-active');
+      const banner = document.getElementById('emergencyBanner');
+      const msg = document.getElementById('emergencyMsg');
+      if (msg) msg.textContent = `PERINGATAN TARGET KHUSUS TERDETEKSI: ${platTarget}`;
+      if (banner) banner.classList.remove('hidden');
+
+      if (audioEnabled) {
+        sireneInterval = setInterval(() => {
+          try {
+            unlockAudioContext();
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.4);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+          } catch(e) {}
+        }, 500);
+      }
+    }
+
+    function matikanSirene() {
+      sireneAktif = false;
+      if (sireneInterval) { clearInterval(sireneInterval); sireneInterval = null; }
+      document.getElementById('bodyRoot').classList.remove('siren-active');
+      const banner = document.getElementById('emergencyBanner');
+      if (banner) banner.classList.add('hidden');
+    }
+
     function ucapkanText(teks) {
       if (!voiceAnnounceEnabled || !('speechSynthesis' in window)) return;
       try {
@@ -485,6 +587,30 @@
       showToast("🔔 DICOBA: Notifikasi Melayang Berhasil!", "success");
       playNotificationChime();
       ucapkanText("SERVER NORMAL DATA BARU READY");
+    }
+
+    function simpanCacheLokal(docs) {
+      try {
+        const minimalData = docs.slice(0, 300).map(doc => ({ id: doc.id, data: doc.data() }));
+        localStorage.setItem('cache_database_ip', JSON.stringify(minimalData));
+      } catch (e) {}
+    }
+
+    function muatCacheLokal() {
+      try {
+        const raw = localStorage.getItem('cache_database_ip');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            semuaData = parsed.map(item => ({
+              id: item.id,
+              data: () => item.data
+            }));
+            hitungStatistik();
+            tampil();
+          }
+        }
+      } catch (e) {}
     }
 
     function cekSesiOtomatis() {
@@ -515,14 +641,34 @@
 
     function toggleShowPin() {
       const input = document.getElementById('kunci');
+      const icon = document.getElementById('iconShowPin');
       input.type = input.type === 'password' ? 'text' : 'password';
+      if (icon) {
+        icon.className = input.type === 'password' ? 'fa-solid fa-eye text-sm' : 'fa-solid fa-eye-slash text-sm';
+      }
     }
 
-    function toggleAudioAlert() { audioEnabled = !audioEnabled; showToast(audioEnabled ? 'Suara aktif' : 'Suara mati', 'info'); }
-    function toggleVoiceAnnounce() { voiceAnnounceEnabled = !voiceAnnounceEnabled; showToast(voiceAnnounceEnabled ? 'TTS aktif' : 'TTS mati', 'info'); }
-    function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else if (document.exitFullscreen) document.exitFullscreen(); }
+    function toggleAudioAlert() { 
+      audioEnabled = !audioEnabled; 
+      const icon = document.getElementById('iconAudioSound');
+      if (icon) icon.className = audioEnabled ? 'fa-solid fa-bell text-lg text-emerald-400' : 'fa-solid fa-bell-slash text-lg text-slate-500';
+      showToast(audioEnabled ? 'Suara notifikasi aktif' : 'Suara notifikasi mati', 'info'); 
+    }
+
+    function toggleVoiceAnnounce() { 
+      voiceAnnounceEnabled = !voiceAnnounceEnabled; 
+      const icon = document.getElementById('iconVoiceAnnounce');
+      if (icon) icon.className = voiceAnnounceEnabled ? 'fa-solid fa-volume-high text-lg text-cyan-400' : 'fa-solid fa-volume-xmark text-lg text-slate-500';
+      showToast(voiceAnnounceEnabled ? 'Pengumuman suara TTS aktif' : 'Pengumuman suara TTS mati', 'info'); 
+    }
+
+    function toggleFullscreen() { 
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{}); 
+      else if (document.exitFullscreen) document.exitFullscreen().catch(()=>{}); 
+    }
 
     function ambilNilai(data, daftarKunci) {
+      if (!data) return "-";
       for (const k of daftarKunci) {
         if (data[k] && String(data[k]).trim() !== '') return String(data[k]).trim().toUpperCase();
       }
@@ -534,47 +680,119 @@
     function ambilNosin(d) { return ambilNilai(d, ['Nosin','no_mesin','mesin','NoMesin','NOMESIN']); }
     function ambilWilayah(d) { return ambilNilai(d, ['wilayah','WILAYAH','area','AREA']); }
     function ambilSeri(d) { return ambilNilai(d, ['seri','SERI','kode_seri']); }
+    function ambilLokasiGps(d) { return ambilNilai(d, ['LOKASI_GPS','lokasi_gps','lokasi','KOORDINAT']); }
+    function ambilMapsUrl(d) { return ambilNilai(d, ['MAPS_URL','maps_url','google_maps','link_maps']); }
+
+    function dapatkanGps() {
+      const inLokasi = document.getElementById('inLokasi');
+      const inMapsUrl = document.getElementById('inMapsUrl');
+      if (!navigator.geolocation) {
+        showToast('Browser / HP tidak mendukung Geolocation GPS', 'error');
+        return;
+      }
+      showToast('Sedang mengambil titik lokasi GPS...', 'info');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude.toFixed(6);
+          const lng = pos.coords.longitude.toFixed(6);
+          const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
+          if (inLokasi) inLokasi.value = `${lat}, ${lng}`;
+          if (inMapsUrl) inMapsUrl.value = mapsUrl;
+          showToast('Titik lokasi GPS berhasil terkunci!', 'success');
+        },
+        (err) => {
+          showToast('Gagal mengambil GPS! Pastikan Izin GPS HP diaktifkan.', 'error');
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    function parseTanggalData(d) {
+      if (!d || !d.waktu_ditemukan) return null;
+      let ts = d.waktu_ditemukan;
+      if (typeof ts === 'object' && ts !== null) {
+        if (typeof ts.seconds === 'number') return new Date(ts.seconds * 1000);
+        if (typeof ts.toDate === 'function') return ts.toDate();
+      }
+      if (typeof ts === 'number') return new Date(ts);
+      if (typeof ts === 'string') {
+        const parsed = new Date(ts);
+        if (!isNaN(parsed.getTime())) return parsed;
+      }
+      return null;
+    }
 
     function formatWaktu(ts) {
       if (!ts) return "-";
-      let d = ts.seconds ? new Date(ts.seconds * 1000) : new Date(ts);
-      if (isNaN(d.getTime())) return "-";
+      let d = null;
+      if (typeof ts === 'object' && ts !== null) {
+        if (typeof ts.seconds === 'number') d = new Date(ts.seconds * 1000);
+        else if (typeof ts.toDate === 'function') d = ts.toDate();
+      } else if (typeof ts === 'number') d = new Date(ts);
+      else if (typeof ts === 'string') d = new Date(ts);
+
+      if (!d || isNaN(d.getTime())) return "-";
       return `<span class="text-white font-mono">${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} — ${namaHari[d.getDay()]}, ${d.getDate()} ${namaBulan[d.getMonth()]}</span>`;
     }
 
     function hitungStatistik() {
       const skrg = new Date();
-      const awalHari = new Date(skrg.getFullYear(), skrg.getMonth(), skrg.getDate());
-      const awalMinggu = new Date(skrg.getTime() - (skrg.getDay() * 86400000)); awalMinggu.setHours(0,0,0,0);
-      const awalBulan = new Date(skrg.getFullYear(), skrg.getMonth(), 1);
-      const awalTahun = new Date(skrg.getFullYear(), 0, 1);
+      
+      const awalHari = new Date(skrg.getFullYear(), skrg.getMonth(), skrg.getDate(), 0, 0, 0, 0);
+      
+      const hariKe = skrg.getDay(); 
+      const awalMinggu = new Date(skrg.getFullYear(), skrg.getMonth(), skrg.getDate() - hariKe, 0, 0, 0, 0);
+      
+      const awalBulan = new Date(skrg.getFullYear(), skrg.getMonth(), 1, 0, 0, 0, 0);
+      
+      const awalTahun = new Date(skrg.getFullYear(), 0, 1, 0, 0, 0, 0);
 
       let hari = 0, minggu = 0, bulan = 0, tahun = 0;
+
       semuaData.forEach(doc => {
-        const d = doc.data();
-        let tsMs = Date.now();
-        if (d.waktu_ditemukan) {
-          if (typeof d.waktu_ditemukan.seconds === 'number') tsMs = d.waktu_ditemukan.seconds * 1000;
-          else { const p = new Date(d.waktu_ditemukan).getTime(); if (!isNaN(p)) tsMs = p; }
+        const d = typeof doc.data === 'function' ? doc.data() : doc.data;
+        const tgl = parseTanggalData(d);
+
+        if (tgl) {
+          if (tgl >= awalHari) hari++;
+          if (tgl >= awalMinggu) minggu++;
+          if (tgl >= awalBulan) bulan++;
+          if (tgl >= awalTahun) tahun++;
         }
-        const tgl = new Date(tsMs);
-        if (tgl >= awalHari) hari++;
-        if (tgl >= awalMinggu) minggu++;
-        if (tgl >= awalBulan) bulan++;
-        if (tgl >= awalTahun) tahun++;
       });
-      document.getElementById('jmlHari').textContent = hari.toLocaleString('id-ID');
-      document.getElementById('jmlMinggu').textContent = minggu.toLocaleString('id-ID');
-      document.getElementById('jmlBulan').textContent = bulan.toLocaleString('id-ID');
-      document.getElementById('jmlTahun').textContent = tahun.toLocaleString('id-ID');
+
+      const updateEl = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) {
+          const oldVal = el.textContent;
+          const newVal = val.toLocaleString('id-ID');
+          el.textContent = newVal;
+          if (oldVal !== newVal) {
+            el.parentElement.classList.remove('stat-updated');
+            void el.parentElement.offsetWidth; // trigger reflow
+            el.parentElement.classList.add('stat-updated');
+          }
+        }
+      };
+
+      updateEl('jmlHari', hari);
+      updateEl('jmlMinggu', minggu);
+      updateEl('jmlBulan', bulan);
+      updateEl('jmlTahun', tahun);
     }
 
     function mulaiPantau() {
       if (pengamat) pengamat();
+      
+      // Load local cache INSTANTLY before network request completes
+      muatCacheLokal();
+      
       isInitialLoad = true;
+      
+      // Mengambil seluruh data dari database Firestore secara real-time tanpa batasan (unlimited)
       pengamat = db.collection('pencarian')
         .orderBy('waktu_ditemukan', 'desc')
-        .onSnapshot(snap => {
+        .onSnapshot({ includeMetadataChanges: true }, snap => {
           if (!isInitialLoad) {
             snap.docChanges().forEach(change => {
               if (change.type === 'added') {
@@ -582,29 +800,66 @@
                 const plat = ambilPlat(d);
                 showToast(`🔔 DATA BARU MASUK: ${plat}`, 'success');
                 playNotificationChime();
-                ucapkanText("DATA BARU MASUK");
+                ucapkanText(`DATA BARU MASUK ${plat}`);
+
+                // Cek apakah plat masuk daftar watchlist
+                if (watchlistNopol.some(w => plat.includes(w))) {
+                  picuSirene(plat);
+                }
               }
             });
           }
 
           semuaData = snap.docs;
+          simpanCacheLokal(semuaData);
           hitungStatistik();
           if (isInitialLoad) isInitialLoad = false;
           tampil();
-        }, () => {});
+        }, error => {
+          console.error("Firestore error:", error);
+        });
+    }
+
+    function bersihkanPencarian() {
+      const el = document.getElementById('inCari');
+      if (el) {
+        el.value = '';
+        tampil();
+      }
     }
 
     function tampil() {
-      let filtered = [...semuaData];
+      const elCari = document.getElementById('inCari');
+      const kataKunci = elCari ? elCari.value.trim().toLowerCase() : '';
+
+      let filtered = semuaData.filter(doc => {
+        if (!kataKunci) return true;
+        const d = typeof doc.data === 'function' ? doc.data() : doc.data;
+        const plat = ambilPlat(d).toLowerCase();
+        const noka = ambilNoka(d).toLowerCase();
+        const nosin = ambilNosin(d).toLowerCase();
+        const wilayah = ambilWilayah(d).toLowerCase();
+        const seri = ambilSeri(d).toLowerCase();
+        const nama = (d.NamaPemilik || d.nama_pemilik || '').toLowerCase();
+
+        return plat.includes(kataKunci) ||
+               noka.includes(kataKunci) ||
+               nosin.includes(kataKunci) ||
+               wilayah.includes(kataKunci) ||
+               seri.includes(kataKunci) ||
+               nama.includes(kataKunci);
+      });
+
       const container = document.getElementById('daftarUtama');
+      if (!container) return;
       
       if (filtered.length === 0) {
-        container.innerHTML = `<div class="p-12 text-center text-slate-500 font-sans"><p class="font-bold text-sm text-slate-400">Tidak ada data ditemukan</p></div>`;
+        container.innerHTML = `<div class="p-12 text-center text-slate-500 font-sans"><p class="font-bold text-sm text-slate-400">Tidak ada data ditemukan dalam database</p></div>`;
         return;
       }
 
       container.innerHTML = filtered.map((doc, index) => {
-        const d = doc.data();
+        const d = typeof doc.data === 'function' ? doc.data() : doc.data;
         const wilayah = ambilWilayah(d);
         const plat = ambilPlat(d);
         const seri = ambilSeri(d);
@@ -612,12 +867,13 @@
         const nosin = ambilNosin(d);
         const waktuStr = formatWaktu(d.waktu_ditemukan);
         const noUrut = index + 1;
+        const isWatchlist = watchlistNopol.some(w => plat.includes(w));
 
         return `
-          <div onclick="bukaDetail('${doc.id}')" class="grid grid-cols-12 gap-1 p-3 px-4 items-center cursor-pointer transition border-b border-slate-800/80 hover:bg-slate-900/80 text-center font-mono text-xs">
+          <div onclick="bukaDetail('${doc.id}')" class="grid grid-cols-12 gap-1 p-3 px-4 items-center cursor-pointer transition border-b border-slate-800/80 hover:bg-slate-900/80 text-center font-mono text-xs ${isWatchlist ? 'bg-red-950/40 border-red-800/50' : ''}">
             <div class="col-span-1 text-slate-400 font-bold">${noUrut}</div>
             <div class="col-span-2 text-slate-200 font-bold break-all">${wilayah}</div>
-            <div class="col-span-2 text-emerald-400 font-black tracking-wider break-all">${plat}</div>
+            <div class="col-span-2 text-emerald-400 font-black tracking-wider break-all ${isWatchlist ? 'text-red-400 animate-pulse' : ''}">${plat}</div>
             <div class="col-span-1 text-fuchsia-300 font-bold break-all">${seri}</div>
             <div class="col-span-2 text-amber-300 font-bold break-all">${noka}</div>
             <div class="col-span-2 text-cyan-300 font-bold break-all">${nosin}</div>
@@ -627,17 +883,169 @@
       }).join('');
     }
 
+    function buatStrukturJsonLengkap(d) {
+      const seriWilayah = d.SeriWilayah || d.WILAYAH || d.wilayah || "B";
+      const nopol = d.Nopol || d.NOPOL || d.nopol || d.plat || "-";
+      const seri = d.Seri || d.SERI || d.seri || "-";
+      const noRangka = d.NoRangka || d.NOKA || d.noka || d.no_rangka || "-";
+      const noMesin = d.NoMesin || d.NOSIN || d.nosin || d.no_mesin || "-";
+
+      let tglUpdate = null;
+      if (d.waktu_ditemukan) {
+        const parsedTgl = parseTanggalData(d);
+        if (parsedTgl) {
+          tglUpdate = parsedTgl.toISOString().replace('T', ' ').replace('Z', '');
+        }
+      }
+
+      return {
+        "SeriWilayah": d.SeriWilayah !== undefined ? d.SeriWilayah : seriWilayah,
+        "Nopol": d.Nopol !== undefined ? d.Nopol : nopol,
+        "Seri": d.Seri !== undefined ? d.Seri : seri,
+        "NamaPemilik": d.NamaPemilik !== undefined ? d.NamaPemilik : (d.nama_pemilik || null),
+        "NoKTP": d.NoKTP !== undefined ? d.NoKTP : (d.noktp || null),
+        "NoKK": d.NoKK !== undefined ? d.NoKK : null,
+        "NoHP": d.NoHP !== undefined ? d.NoHP : null,
+        "Email": d.Email !== undefined ? d.Email : null,
+        "Pekerjaan": d.Pekerjaan !== undefined ? d.Pekerjaan : (d.pekerjaan || null),
+        "Alamat": d.Alamat !== undefined ? d.Alamat : (d.alamat || null),
+        "RT": d.RT !== undefined ? Number(d.RT) : 0,
+        "RW": d.RW !== undefined ? Number(d.RW) : 0,
+        "Merk": d.Merk !== undefined ? d.Merk : (d.merk || null),
+        "Type": d.Type !== undefined ? d.Type : (d.type || d.tipe || null),
+        "TahunPembuatan": d.TahunPembuatan !== undefined ? (isNaN(Number(d.TahunPembuatan)) ? d.TahunPembuatan : Number(d.TahunPembuatan)) : (d.tahun ? Number(d.tahun) : null),
+        "IsiCylinder": d.IsiCylinder !== undefined ? String(d.IsiCylinder) : (d.cc ? String(d.cc) : null),
+        "NamaBBM": d.NamaBBM !== undefined ? d.NamaBBM : (d.bbm || null),
+        "Warna": d.Warna !== undefined ? d.Warna : (d.warna || null),
+        "NoRangka": d.NoRangka !== undefined ? d.NoRangka : noRangka,
+        "NoMesin": d.NoMesin !== undefined ? d.NoMesin : noMesin,
+        "JumlahSumbu": d.JumlahSumbu !== undefined ? Number(d.JumlahSumbu) : null,
+        "JumlahRoda": d.JumlahRoda !== undefined ? Number(d.JumlahRoda) : null,
+        "WarnaTNKB": d.WarnaTNKB !== undefined ? d.WarnaTNKB : null,
+        "JenisKendaraan": d.JenisKendaraan !== undefined ? d.JenisKendaraan : (d.jenis || null),
+        "NamaModelKendaraan": d.NamaModelKendaraan !== undefined ? d.NamaModelKendaraan : (d.model || null),
+        "Negara": d.Negara !== undefined ? d.Negara : null,
+        "NoBPKB": d.NoBPKB !== undefined ? d.NoBPKB : (d.bpkb || null),
+        "NoSTNK": d.NoSTNK !== undefined ? d.NoSTNK : null,
+        "TanggalSTNK": d.TanggalSTNK !== undefined ? d.TanggalSTNK : null,
+        "TanggalDaftar": d.TanggalDaftar !== undefined ? d.TanggalDaftar : null,
+        "NoFaktur": d.NoFaktur !== undefined ? d.NoFaktur : null,
+        "TanggalFaktur": d.TanggalFaktur !== undefined ? d.TanggalFaktur : null,
+        "TanggalPengesahan": d.TanggalPengesahan !== undefined ? d.TanggalPengesahan : null,
+        "TanggalDaftarPertama": d.TanggalDaftarPertama !== undefined ? d.TanggalDaftarPertama : null,
+        "APM": d.APM !== undefined ? d.APM : null,
+        "NoPIB": d.NoPIB !== undefined ? d.NoPIB : null,
+        "NoSUT": d.NoSUT !== undefined ? d.NoSUT : null,
+        "NoTPT": d.NoTPT !== undefined ? d.NoTPT : null,
+        "NoFormABC": d.NoFormABC !== undefined ? d.NoFormABC : "",
+        "KantorBeaCukai": d.KantorBeaCukai !== undefined ? d.KantorBeaCukai : "",
+        "KodePulau": d.KodePulau !== undefined ? Number(d.KodePulau) : null,
+        "NamaPulau": d.NamaPulau !== undefined ? d.NamaPulau : null,
+        "KodeProvinsi": d.KodeProvinsi !== undefined ? Number(d.KodeProvinsi) : null,
+        "NamaProvinsi": d.NamaProvinsi !== undefined ? d.NamaProvinsi : null,
+        "KodeKabKota": d.KodeKabKota !== undefined ? Number(d.KodeKabKota) : null,
+        "NamaKabKota": d.NamaKabKota !== undefined ? d.NamaKabKota : null,
+        "KodeKec": d.KodeKec !== undefined ? Number(d.KodeKec) : null,
+        "KodeKel": d.KodeKel !== undefined ? Number(d.KodeKel) : null,
+        "NamaPolda": d.NamaPolda !== undefined ? d.NamaPolda : null,
+        "SingkatanPolda": d.SingkatanPolda !== undefined ? d.SingkatanPolda : null,
+        "samsat": d.samsat || [],
+        "tambahan": d.tambahan || {
+          "TanggalUpdateTerakhir": tglUpdate,
+          "NoSRUT": d.NoSRUT || null
+        }
+      };
+    }
+
+    function highlightJsonSintaks(obj) {
+      let json = JSON.stringify(obj, null, 2);
+      json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        let cls = 'text-amber-300'; // number
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'text-cyan-400 font-bold'; // key
+          } else {
+            cls = 'text-emerald-300'; // string
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'text-fuchsia-400 font-bold'; // boolean
+        } else if (/null/.test(match)) {
+          cls = 'text-slate-500 italic'; // null
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+      });
+    }
+
     function bukaDetail(id) {
       docIdTerpilih = id;
       const doc = semuaData.find(d => d.id === id);
       if (!doc) return;
-      const d = doc.data();
-      let html = `<div class="mb-3 p-3 bg-cyan-950/50 rounded-xl border border-cyan-700/60"><div class="text-[10px] text-slate-500 font-bold">ID:</div><div class="text-xs text-red-400 font-mono">${id}</div></div>`;
-      for (const [k, v] of Object.entries(d)) {
-        html += `<div class="p-2.5 rounded-lg bg-black border border-slate-800"><div class="text-[10px] font-bold text-slate-400 uppercase">${k}</div><div class="text-xs font-mono text-white mt-0.5 break-all">${v}</div></div>`;
+      const d = typeof doc.data === 'function' ? doc.data() : doc.data;
+      
+      const jsonStruktur = buatStrukturJsonLengkap(d);
+      
+      let html = `<div class="mb-3 p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+        <div>
+          <div class="text-[10px] text-slate-400 font-bold">ID DOKUMEN FIRESTORE:</div>
+          <div class="text-xs text-red-400 font-mono select-all">${id}</div>
+        </div>
+        <button onclick="salinJsonMentah()" class="px-2.5 py-1 bg-cyan-950 border border-cyan-500/50 text-cyan-300 rounded-lg text-[11px] font-bold hover:bg-cyan-900 transition">
+          <i class="fa-solid fa-copy mr-1"></i>SALIN JSON
+        </button>
+      </div>`;
+      
+      const mapsUrl = ambilMapsUrl(d);
+      if (mapsUrl && mapsUrl !== '-') {
+        html += `
+          <div class="mb-3 p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/60 flex items-center justify-between">
+            <div class="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-map-location-dot text-emerald-400 text-sm"></i>
+              <span>TITIK LOKASI PENEMUAN</span>
+            </div>
+            <a href="${mapsUrl}" target="_blank" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 transition active:scale-95 shadow-md">
+              <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+              <span>BUKA PETA</span>
+            </a>
+          </div>
+        `;
       }
+
+      const jsonFormatted = highlightJsonSintaks(jsonStruktur);
+
+      html += `
+        <div class="bg-black border-2 border-slate-800 rounded-xl p-3.5 overflow-x-auto">
+          <pre class="font-mono text-xs leading-relaxed whitespace-pre select-all">${jsonFormatted}</pre>
+        </div>
+      `;
+
       document.getElementById('modalIsi').innerHTML = html;
       document.getElementById('modalLatar').classList.remove('hidden');
+    }
+
+    function salinJsonMentah() {
+      if (!docIdTerpilih) return;
+      const doc = semuaData.find(d => d.id === docIdTerpilih);
+      if (!doc) return;
+      const d = typeof doc.data === 'function' ? doc.data() : doc.data;
+      const jsonStruktur = buatStrukturJsonLengkap(d);
+      const teksJson = JSON.stringify(jsonStruktur, null, 2);
+      
+      const ta = document.createElement('textarea');
+      ta.value = teksJson;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('Teks JSON disalin ke clipboard!', 'success');
+      } catch(e) {
+        showToast('Gagal menyalin JSON', 'error');
+      }
+      document.body.removeChild(ta);
+    }
+
+    function salinFormatLaporan() {
+      salinJsonMentah();
     }
 
     function tutupDetail() { document.getElementById('modalLatar').classList.add('hidden'); docIdTerpilih = null; }
@@ -650,68 +1058,142 @@
       const nosin = document.getElementById('inNosin').value.trim().toUpperCase();
       const wilayah = document.getElementById('inWilayah').value.trim().toUpperCase();
       const seri = document.getElementById('inSeri').value.trim().toUpperCase();
-      if (!nopol) { showToast('Isi Nopol!', 'error'); return; }
-      db.collection('pencarian').add({
-        NOPOL: nopol, NOKA: noka || '-', NOSIN: nosin || '-',
-        WILAYAH: wilayah || '-', SERI: seri || '-',
+      const lokasi = document.getElementById('inLokasi') ? document.getElementById('inLokasi').value.trim() : '';
+      const mapsUrl = document.getElementById('inMapsUrl') ? document.getElementById('inMapsUrl').value.trim() : '';
+      
+      if (!nopol) { showToast('Nopol wajib diisi!', 'error'); return; }
+
+      const dataBaru = {
+        NOPOL: nopol,
+        NOKA: noka || '-',
+        NOSIN: nosin || '-',
+        WILAYAH: wilayah || '-',
+        SERI: seri || '-',
+        LOKASI_GPS: lokasi || '-',
+        MAPS_URL: mapsUrl || '-',
         waktu_ditemukan: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(() => { showToast('Disimpan!', 'success'); tutupModalInput(); });
+      };
+
+      // Optimistic Update: langsung tambahkan ke tampilan secara instan (0 ms)
+      const mockDoc = {
+        id: 'temp_' + Date.now(),
+        data: () => ({ ...dataBaru, waktu_ditemukan: new Date() })
+      };
+      semuaData.unshift(mockDoc);
+      hitungStatistik();
+      tampil();
+
+      db.collection('pencarian').add(dataBaru)
+        .then(() => { 
+          showToast('Data berhasil disimpan!', 'success'); 
+          tutupModalInput();
+          // Reset form input
+          document.getElementById('inNopol').value = '';
+          document.getElementById('inNoka').value = '';
+          document.getElementById('inNosin').value = '';
+          document.getElementById('inWilayah').value = '';
+          document.getElementById('inSeri').value = '';
+          if (document.getElementById('inLokasi')) document.getElementById('inLokasi').value = '';
+          if (document.getElementById('inMapsUrl')) document.getElementById('inMapsUrl').value = '';
+        })
+        .catch(err => {
+          showToast('Gagal menyimpan ke server!', 'error');
+        });
     }
 
-    function bukaModalWatchlist() { document.getElementById('modalWatchlist').classList.remove('hidden'); }
+    function bukaModalWatchlist() { 
+      document.getElementById('modalWatchlist').classList.remove('hidden'); 
+      perbaruiTampilanWatchlist();
+    }
+    
     function tutupModalWatchlist() { document.getElementById('modalWatchlist').classList.add('hidden'); }
+
+    function tambahWatchlist() {
+      const input = document.getElementById('inWatchlistNopol');
+      const val = input.value.trim().toUpperCase();
+      if (!val) return;
+      if (!watchlistNopol.includes(val)) {
+        watchlistNopol.push(val);
+        localStorage.setItem('watchlist_nopol', JSON.stringify(watchlistNopol));
+        input.value = '';
+        perbaruiTampilanWatchlist();
+        showToast(`Target ${val} ditambahkan ke Watchlist`, 'success');
+        tampil();
+      }
+    }
+
+    function hapusWatchlist(target) {
+      watchlistNopol = watchlistNopol.filter(w => w !== target);
+      localStorage.setItem('watchlist_nopol', JSON.stringify(watchlistNopol));
+      perbaruiTampilanWatchlist();
+      showToast(`Target ${target} dihapus`, 'info');
+      tampil();
+    }
+
+    function perbaruiTampilanWatchlist() {
+      const container = document.getElementById('listWatchlist');
+      const badge = document.getElementById('badgeWatchlist');
+      if (badge) {
+        if (watchlistNopol.length > 0) badge.classList.remove('hidden');
+        else badge.classList.add('hidden');
+      }
+
+      if (!container) return;
+      if (watchlistNopol.length === 0) {
+        container.innerHTML = `<div class="text-slate-500 text-center py-4">Belum ada target dalam watchlist</div>`;
+        return;
+      }
+
+      container.innerHTML = watchlistNopol.map(w => `
+        <div class="flex items-center justify-between p-2 bg-black border border-slate-800 rounded-lg">
+          <span class="text-red-400 font-bold">${w}</span>
+          <button onclick="hapusWatchlist('${w}')" class="text-slate-400 hover:text-red-500 px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>
+        </div>
+      `).join('');
+    }
 
     function buatPesanWa(d) {
       const plat = ambilPlat(d);
       const noka = ambilNoka(d);
       const nosin = ambilNosin(d);
       const wilayah = ambilWilayah(d);
+      const lokasiGps = ambilLokasiGps(d);
+      const mapsUrl = ambilMapsUrl(d);
       const waktu = d.waktu_ditemukan ? formatWaktu(d.waktu_ditemukan).replace(/<[^>]*>/g, '') : "-";
       
-      let rincian = '';
-      for (const [k, v] of Object.entries(d)) {
-        if (['waktu_ditemukan','NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL','Noka','no_rangka','rangka','NoRangka','NORANGKA','Nosin','no_mesin','mesin','NoMesin','NOMESIN'].includes(k)) continue;
-        rincian += `• ${k.toUpperCase().padEnd(16,' ')}: ${v}\n`;
-      }
+      let teksLokasi = wilayah;
+      if (lokasiGps !== '-') teksLokasi += ` (${lokasiGps})`;
+      if (mapsUrl !== '-') teksLokasi += `\n🗺️ PETA    : ${mapsUrl}`;
+
+      const jsonStruktur = buatStrukturJsonLengkap(d);
+      const jsonStr = JSON.stringify(jsonStruktur, null, 2);
       
       return `PUSAT KONTROL DATABASE IP
 ━━━━━━━━━━━━━━━━━━━
-🚗 NOPOL   : ${plat}
-📍 WILAYAH : ${wilayah}
-🔶 NOKA    : ${noka}
-🔷 NOSIN   : ${nosin}
-🕐 WAKTU   : ${waktu}
+🚗 NOPOL    : ${plat}
+📍 WILAYAH : ${teksLokasi}
+🔶 NOKA     : ${noka}
+🔷 NOSIN    : ${nosin}
+🕐 WAKTU    : ${waktu}
 ━━━━━━━━━━━━━━━━━━━
-${rincian}Terima kasih.`;
-    }
-
-    function salinFormatLaporan() {
-      if (!docIdTerpilih) return;
-      const doc = semuaData.find(d => d.id === docIdTerpilih);
-      if (!doc) return;
-      const teks = buatPesanWa(doc.data());
-      const ta = document.createElement('textarea');
-      ta.value = teks;
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand('copy');
-        showToast('Teks laporan disalin!', 'success');
-      } catch(e) {
-        showToast('Gagal menyalin', 'error');
-      }
-      document.body.removeChild(ta);
+DATA JSON LENGKAP:
+\`\`\`json
+${jsonStr}
+\`\`\`
+Terima kasih.`;
     }
 
     function kirimWaDariModal() {
       if (!docIdTerpilih) return;
       const doc = semuaData.find(d => d.id === docIdTerpilih);
       if (!doc) return;
-      const pesan = buatPesanWa(doc.data());
+      const d = typeof doc.data === 'function' ? doc.data() : doc.data;
+      const pesan = buatPesanWa(d);
       const url = `https://wa.me/?text=${encodeURIComponent(pesan)}`;
       window.open(url, '_blank');
     }
 
+    // Jalankan pemeriksaan sesi login standby otomatis saat pertama kali dibuka
     cekSesiOtomatis();
   </script>
 </body>
