@@ -34,6 +34,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 
+  <!-- Chart.js for Analytics (Feature 3) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- SheetJS (XLSX) for Excel Export & Import (Feature 1) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <!-- Firebase Compat SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
@@ -98,6 +104,7 @@
     @media print {
       body { background: white !important; color: black !important; }
       .no-print { display: none !important; }
+      .print-only { display: block !important; }
     }
   </style>
 </head>
@@ -130,11 +137,6 @@
           <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">
             PUSAT KONTROL <span class="text-red-500 underline decoration-red-500 underline-offset-4">DATABASE</span>
           </h1>
-          <!-- Status Terhubung di Bawah Nama Aplikasi -->
-          <div class="flex items-center justify-center gap-1.5 text-xs font-semibold text-emerald-400 mt-2">
-            <i class="fa-solid fa-signal text-emerald-400 animate-pulse text-[11px]"></i>
-            <span class="font-mono text-[11px]">TERHUBUNG</span>
-          </div>
         </div>
 
         <!-- Login Card -->
@@ -240,6 +242,15 @@
               <i id="iconVoiceAnnounce" class="fa-solid fa-volume-high text-lg text-cyan-400"></i>
             </button>
 
+            <!-- Feature 5: Audit Log / Riwayat Aktivitas Button -->
+            <button 
+              onclick="bukaModalAuditLog()" 
+              title="Riwayat Aktivitas Posko (Audit Log)"
+              class="p-2 text-amber-400 hover:text-amber-300 hover:bg-slate-900 rounded-lg transition border border-amber-950/80 relative"
+            >
+              <i class="fa-solid fa-clock-rotate-left text-lg"></i>
+            </button>
+
             <!-- Watchlist / DPO Target Manager Button -->
             <button 
               onclick="bukaModalWatchlist()" 
@@ -257,6 +268,25 @@
               class="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-slate-900 rounded-lg transition"
             >
               <i class="fa-solid fa-expand text-lg"></i>
+            </button>
+
+            <!-- Feature 1: Export / Import Data Menu Buttons -->
+            <button 
+              onclick="bukaModalImpor()" 
+              title="Impor Data Massal dari Excel / CSV"
+              class="py-2 px-2.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-400 border border-emerald-600/80 font-extrabold text-xs rounded-lg transition shadow-md shadow-emerald-950 flex items-center gap-1.5 ml-1 active:scale-95"
+            >
+              <i class="fa-solid fa-file-import text-xs"></i>
+              <span class="hidden sm:inline">IMPOR EXCEL</span>
+            </button>
+
+            <button 
+              onclick="bukaModalEkspor()" 
+              title="Ekspor Laporan Data (Excel / CSV / PDF)"
+              class="py-2 px-2.5 bg-cyan-950/80 hover:bg-cyan-900 text-cyan-400 border border-cyan-600/80 font-extrabold text-xs rounded-lg transition shadow-md shadow-cyan-950 flex items-center gap-1.5 active:scale-95"
+            >
+              <i class="fa-solid fa-file-export text-xs"></i>
+              <span class="hidden sm:inline">EKSPOR</span>
             </button>
 
             <!-- Quick Add Button -->
@@ -279,6 +309,26 @@
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- TAB NAVIGATION MENU (DATA TABEL vs ANALYTICS GRAFIK) -->
+      <div class="flex items-center gap-2 border-b border-slate-800 pb-2">
+        <button 
+          id="tabBtnTabel" 
+          onclick="gantiTabDashboard('tabel')"
+          class="py-2 px-4 rounded-xl font-black text-xs flex items-center gap-2 bg-red-600 text-white shadow-lg transition"
+        >
+          <i class="fa-solid fa-table-list"></i>
+          <span>DATA TABEL REAL-TIME</span>
+        </button>
+        <button 
+          id="tabBtnAnalytics" 
+          onclick="gantiTabDashboard('analytics')"
+          class="py-2 px-4 rounded-xl font-bold text-xs flex items-center gap-2 bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition"
+        >
+          <i class="fa-solid fa-chart-line text-cyan-400"></i>
+          <span>DASHBOARD ANALYTICS & GRAFIK (CHART.JS)</span>
+        </button>
       </div>
 
       <!-- MODUL UTAMA DASHBOARD -->
@@ -311,52 +361,103 @@
           </div>
         </div>
 
-        <!-- KOLOM PENCARIAN CEPAT (LIVE SEARCH BAR) -->
-        <div class="glass-panel rounded-2xl p-3 border-2 border-slate-800 shadow-xl flex items-center gap-3">
-          <div class="text-slate-400 pl-2">
-            <i class="fa-solid fa-magnifying-glass text-sm text-red-500 animate-pulse"></i>
+        <!-- Feature 3: PANEL DASHBOARD ANALYTICS & GRAFIK (Hidden by Default) -->
+        <div id="panelAnalytics" class="hidden space-y-4">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <!-- Grafik Tren Waktu Penemuan -->
+            <div class="lg:col-span-2 glass-panel rounded-2xl p-4 border-2 border-slate-800 shadow-xl space-y-2">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-xs font-black text-white flex items-center gap-2">
+                  <i class="fa-solid fa-chart-line text-cyan-400"></i>
+                  <span>TREN AKTIVITAS PENEMUAN KENDARAAN (30 HARI TERAKHIR)</span>
+                </h3>
+                <span class="text-[10px] text-cyan-400 font-mono">LIVE CHART</span>
+              </div>
+              <div class="h-64 w-full relative">
+                <canvas id="chartTrenCanvas"></canvas>
+              </div>
+            </div>
+
+            <!-- Grafik Breakdown Wilayah Hotspot -->
+            <div class="glass-panel rounded-2xl p-4 border-2 border-slate-800 shadow-xl space-y-2">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-xs font-black text-white flex items-center gap-2">
+                  <i class="fa-solid fa-map-pin text-red-500"></i>
+                  <span>RANKING WILAYAH TERBANYAK</span>
+                </h3>
+                <span class="text-[10px] text-red-400 font-mono">HOTSPOT</span>
+              </div>
+              <div class="h-64 w-full relative flex items-center justify-center">
+                <canvas id="chartWilayahCanvas"></canvas>
+              </div>
+            </div>
           </div>
-          <input 
-            type="text" 
-            id="inCari" 
-            oninput="tampil()" 
-            placeholder="Ketik Nopol, Noka, Nosin, Wilayah, Seri, atau Nama Pemilik..." 
-            class="w-full bg-transparent text-white text-xs sm:text-sm font-mono placeholder-slate-500 outline-none font-bold uppercase"
-          >
-          <button 
-            onclick="bersihkanPencarian()" 
-            title="Bersihkan Pencarian"
-            class="text-slate-500 hover:text-white px-2 py-1 text-xs transition"
-          >
-            <i class="fa-solid fa-xmark"></i>
-          </button>
+
+          <!-- Grafik Distribusi Seri/Tipe Kendaraan -->
+          <div class="glass-panel rounded-2xl p-4 border-2 border-slate-800 shadow-xl space-y-2">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h3 class="text-xs font-black text-white flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-emerald-400"></i>
+                <span>DISTRIBUSI SERI & KATEGORI KENDARAAN</span>
+              </h3>
+              <span class="text-[10px] text-emerald-400 font-mono">SEBARAN SERI</span>
+            </div>
+            <div class="h-56 w-full relative">
+              <canvas id="chartSeriCanvas"></canvas>
+            </div>
+          </div>
         </div>
 
-        <!-- Data Table View (NO, WILAYAH, NOPOL, SERI, NOKA, NOSIN, WAKTU PENGECEKAN) -->
-        <div class="glass-panel rounded-2xl overflow-hidden border-2 border-slate-800 shadow-2xl">
-          <div class="overflow-x-auto">
-            <div class="min-w-[680px]">
-              <!-- Desktop Table Header -->
-              <div class="grid grid-cols-12 gap-1 p-3.5 px-4 bg-slate-950 text-[11px] font-black uppercase tracking-wider text-slate-300 border-b-2 border-slate-800 text-center">
-                <div class="col-span-1">NO</div>
-                <div class="col-span-2">WILAYAH</div>
-                <div class="col-span-2">NOPOL</div>
-                <div class="col-span-1">SERI</div>
-                <div class="col-span-2">NOKA</div>
-                <div class="col-span-2">NOSIN</div>
-                <div class="col-span-2">WAKTU PENGECEKAN</div>
-              </div>
+        <!-- VIEW TABEL DATA -->
+        <div id="panelTabelView" class="space-y-4">
+          <!-- KOLOM PENCARIAN CEPAT (LIVE SEARCH BAR) -->
+          <div class="glass-panel rounded-2xl p-3 border-2 border-slate-800 shadow-xl flex items-center gap-3">
+            <div class="text-slate-400 pl-2">
+              <i class="fa-solid fa-magnifying-glass text-sm text-red-500 animate-pulse"></i>
+            </div>
+            <input 
+              type="text" 
+              id="inCari" 
+              oninput="tampil()" 
+              placeholder="Ketik Nopol, Noka, Nosin, Wilayah, Seri, atau Nama Pemilik..." 
+              class="w-full bg-transparent text-white text-xs sm:text-sm font-mono placeholder-slate-500 outline-none font-bold uppercase"
+            >
+            <button 
+              onclick="bersihkanPencarian()" 
+              title="Bersihkan Pencarian"
+              class="text-slate-500 hover:text-white px-2 py-1 text-xs transition"
+            >
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
 
-              <!-- Scrollable List -->
-              <div id="daftarUtama" class="max-h-[540px] overflow-y-auto divide-y divide-slate-800/80 font-mono text-xs">
-                <div class="p-12 text-center text-slate-400 space-y-3">
-                  <i class="fa-solid fa-circle-notch fa-spin text-3xl text-red-500"></i>
-                  <p class="font-sans text-xs font-semibold">Sedang memuat database Firestore secara real-time...</p>
+          <!-- Data Table View (NO, WILAYAH, NOPOL, SERI, NOKA, NOSIN, WAKTU PENGECEKAN) -->
+          <div class="glass-panel rounded-2xl overflow-hidden border-2 border-slate-800 shadow-2xl">
+            <div class="overflow-x-auto">
+              <div class="min-w-[680px]">
+                <!-- Desktop Table Header -->
+                <div class="grid grid-cols-12 gap-1 p-3.5 px-4 bg-slate-950 text-[11px] font-black uppercase tracking-wider text-slate-300 border-b-2 border-slate-800 text-center">
+                  <div class="col-span-1">NO</div>
+                  <div class="col-span-2">WILAYAH</div>
+                  <div class="col-span-2">NOPOL</div>
+                  <div class="col-span-1">SERI</div>
+                  <div class="col-span-2">NOKA</div>
+                  <div class="col-span-2">NOSIN</div>
+                  <div class="col-span-2">WAKTU PENGECEKAN</div>
+                </div>
+
+                <!-- Scrollable List -->
+                <div id="daftarUtama" class="max-h-[540px] overflow-y-auto divide-y divide-slate-800/80 font-mono text-xs">
+                  <div class="p-12 text-center text-slate-400 space-y-3">
+                    <i class="fa-solid fa-circle-notch fa-spin text-3xl text-red-500"></i>
+                    <p class="font-sans text-xs font-semibold">Sedang memuat database Firestore secara real-time...</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
       </div>
 
     </div>
@@ -418,6 +519,86 @@
     </div>
   </div>
 
+  <!-- Feature 1: MODAL IMPOR DATA MASSAL (BULK UPLOAD EXCEL / CSV) -->
+  <div id="modalImpor" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center no-print" onclick="if(event.target.id==='modalImpor') tutupModalImpor()">
+    <div class="glass-panel rounded-2xl border-2 border-emerald-600 max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-black text-sm text-emerald-400 flex items-center gap-2">
+          <i class="fa-solid fa-file-excel"></i>
+          <span>IMPOR MASSAL (EXCEL / CSV)</span>
+        </h3>
+        <button onclick="tutupModalImpor()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="space-y-3">
+        <p class="text-xs text-slate-300">Pilih file <b>.xlsx / .csv</b> yang berisi data kendaraan. Sistem akan membaca kolom NOPOL, NOKA, NOSIN, WILAYAH, dan SERI secara otomatis.</p>
+        
+        <div class="border-2 border-dashed border-emerald-500/50 hover:border-emerald-400 rounded-xl p-6 text-center bg-emerald-950/20 cursor-pointer transition" onclick="document.getElementById('inputFileInput').click()">
+          <i class="fa-solid fa-cloud-arrow-up text-3xl text-emerald-400 mb-2"></i>
+          <p class="text-xs font-bold text-white">Klik untuk Pilih File Excel / CSV</p>
+          <p class="text-[10px] text-slate-400 mt-1">Format: .xlsx, .xls, .csv</p>
+          <input type="file" id="inputFileInput" accept=".xlsx, .xls, .csv" onchange="prosesFileImpor(event)" class="hidden">
+        </div>
+
+        <div id="previewImporBox" class="hidden space-y-2 border border-slate-800 p-3 rounded-xl bg-black font-mono text-xs">
+          <div class="flex justify-between items-center text-emerald-400 font-bold">
+            <span>FILE TERDETEKSI:</span>
+            <span id="txtJumlahBaris" class="text-white">0 Data</span>
+          </div>
+          <div id="previewDataText" class="text-[11px] text-slate-400 max-h-24 overflow-y-auto font-mono bg-slate-950 p-2 rounded border border-slate-900"></div>
+          
+          <button onclick="eksekusiImporFirestore()" id="btnProsesImpor" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-lg transition text-xs shadow-lg active:scale-95 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-database"></i>
+            <span>UNGGAH KEU DATABASE FIRESTORE</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature 1: MODAL EKSPOR DATA (EXCEL / CSV / PDF) -->
+  <div id="modalEkspor" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center no-print" onclick="if(event.target.id==='modalEkspor') tutupModalEkspor()">
+    <div class="glass-panel rounded-2xl border-2 border-cyan-600 max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-black text-sm text-cyan-400 flex items-center gap-2">
+          <i class="fa-solid fa-file-export"></i>
+          <span>EKSPOR LAPORAN DATABASE</span>
+        </h3>
+        <button onclick="tutupModalEkspor()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="space-y-3 font-sans">
+        <p class="text-xs text-slate-300">Pilih format unduhan data laporan yang diinginkan:</p>
+        
+        <div class="grid grid-cols-1 gap-2">
+          <button onclick="eksporExcel()" class="p-3 bg-slate-900 hover:bg-slate-800 border border-emerald-500/50 hover:border-emerald-400 rounded-xl text-left flex items-center gap-3 transition">
+            <i class="fa-solid fa-file-excel text-2xl text-emerald-400"></i>
+            <div>
+              <div class="text-xs font-bold text-white">Unduh Format Microsoft Excel (.xlsx)</div>
+              <div class="text-[10px] text-slate-400">Lengkap seluruh atribut data & timestamp</div>
+            </div>
+          </button>
+
+          <button onclick="eksporCSV()" class="p-3 bg-slate-900 hover:bg-slate-800 border border-cyan-500/50 hover:border-cyan-400 rounded-xl text-left flex items-center gap-3 transition">
+            <i class="fa-solid fa-file-csv text-2xl text-cyan-400"></i>
+            <div>
+              <div class="text-xs font-bold text-white">Unduh Format CSV (.csv)</div>
+              <div class="text-[10px] text-slate-400">Cocok untuk integrasi ke sistem database lain</div>
+            </div>
+          </button>
+
+          <button onclick="cetakLaporanPdf()" class="p-3 bg-slate-900 hover:bg-slate-800 border border-red-500/50 hover:border-red-400 rounded-xl text-left flex items-center gap-3 transition">
+            <i class="fa-solid fa-print text-2xl text-red-400"></i>
+            <div>
+              <div class="text-xs font-bold text-white">Cetak Laporan PDF Siap Pakai</div>
+              <div class="text-[10px] text-slate-400">Tampilan dokumen laporan resmi cetak posko</div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL WATCHLIST / BLACKLIST MANAGER -->
   <div id="modalWatchlist" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center no-print" onclick="if(event.target.id==='modalWatchlist') tutupModalWatchlist()">
     <div class="glass-panel rounded-2xl border-2 border-red-700 max-w-md w-full p-5 shadow-2xl space-y-4">
@@ -437,6 +618,31 @@
       </div>
     </div>
   </div>
+
+  <!-- Feature 5: MODAL AUDIT LOG & RIWAYAT AKTIVITAS POSKO -->
+  <div id="modalAuditLog" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center no-print" onclick="if(event.target.id==='modalAuditLog') tutupModalAuditLog()">
+    <div class="glass-panel rounded-2xl border-2 border-amber-600 max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="p-4 px-5 bg-black border-b-2 border-slate-800 flex items-center justify-between">
+        <h3 class="font-black text-sm text-amber-400 tracking-wide flex items-center gap-2">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span>AUDIT LOG & RIWAYAT AKTIVITAS POSKO</span>
+        </h3>
+        <button onclick="tutupModalAuditLog()" class="w-8 h-8 rounded-lg bg-slate-900 text-slate-300 hover:text-white flex items-center justify-center transition border border-slate-700">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between text-xs font-mono">
+        <span class="text-slate-400">TOTAL RIWAYAT LOG: <b id="cntAuditLog" class="text-amber-400">0</b></span>
+        <button onclick="hapusRiwayatLog()" class="text-red-400 hover:text-red-300 text-[11px] font-bold"><i class="fa-solid fa-trash mr-1"></i>BERSIHKAN LOG</button>
+      </div>
+      <div id="listAuditLog" class="p-4 overflow-y-auto space-y-2 text-xs font-mono flex-grow">
+        <div class="text-slate-500 text-center py-8">Belum ada catatan riwayat aktivitas.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Area Khusus Cetak Dokumen Laporan PDF -->
+  <div id="printReportArea" class="hidden print-only"></div>
 
   <footer class="py-4 text-center text-[11px] text-slate-500 font-mono font-bold border-t border-slate-900 bg-black no-print">
     DATABASE IP REAL-TIME • PUSAT KONTROL V3.8
@@ -481,6 +687,12 @@
     let sireneInterval = null;
     let audioCtx = null;
     let isInitialLoad = true;
+    let dataImporParsed = [];
+
+    // Chart.js Instances
+    let chartTren = null;
+    let chartWilayah = null;
+    let chartSeri = null;
 
     let watchlistNopol = JSON.parse(localStorage.getItem('watchlist_nopol') || '[]');
 
@@ -545,6 +757,8 @@
       const msg = document.getElementById('emergencyMsg');
       if (msg) msg.textContent = `PERINGATAN TARGET KHUSUS TERDETEKSI: ${platTarget}`;
       if (banner) banner.classList.remove('hidden');
+
+      catatAktivitas('DARURAT', `Sirine Peringatan Terpemicu untuk Plat Target: ${platTarget}`, 'danger');
 
       if (audioEnabled) {
         sireneInterval = setInterval(() => {
@@ -626,13 +840,16 @@
         localStorage.setItem('standby_mode', 'true');
         document.getElementById('layarMasuk').classList.add('hidden');
         document.getElementById('lap').classList.remove('hidden');
+        catatAktivitas('LOGIN', 'Petugas Berhasil Masuk ke Pusat Kontrol', 'success');
         mulaiPantau();
       } else {
         showToast('Kunci Akses (PIN) salah!', 'error');
+        catatAktivitas('LOGIN_GAGAL', 'Percobaan Akses PIN Salah', 'danger');
       }
     }
 
     function keluarSistem() {
+      catatAktivitas('LOGOUT', 'Petugas Keluar / Standby Kunci Sistem', 'info');
       localStorage.removeItem('standby_mode');
       if (pengamat) pengamat();
       document.getElementById('lap').classList.add('hidden');
@@ -675,11 +892,11 @@
       return "-";
     }
 
-    function ambilPlat(d) { return ambilNilai(d, ['NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL']); }
+    function ambilPlat(d) { return ambilNilai(d, ['NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL','Nopol']); }
     function ambilNoka(d) { return ambilNilai(d, ['Noka','no_rangka','rangka','NoRangka','NORANGKA']); }
     function ambilNosin(d) { return ambilNilai(d, ['Nosin','no_mesin','mesin','NoMesin','NOMESIN']); }
-    function ambilWilayah(d) { return ambilNilai(d, ['wilayah','WILAYAH','area','AREA']); }
-    function ambilSeri(d) { return ambilNilai(d, ['seri','SERI','kode_seri']); }
+    function ambilWilayah(d) { return ambilNilai(d, ['wilayah','WILAYAH','area','AREA','SeriWilayah']); }
+    function ambilSeri(d) { return ambilNilai(d, ['seri','SERI','kode_seri','Seri']); }
     function ambilLokasiGps(d) { return ambilNilai(d, ['LOKASI_GPS','lokasi_gps','lokasi','KOORDINAT']); }
     function ambilMapsUrl(d) { return ambilNilai(d, ['MAPS_URL','maps_url','google_maps','link_maps']); }
 
@@ -739,12 +956,9 @@
       const skrg = new Date();
       
       const awalHari = new Date(skrg.getFullYear(), skrg.getMonth(), skrg.getDate(), 0, 0, 0, 0);
-      
       const hariKe = skrg.getDay(); 
       const awalMinggu = new Date(skrg.getFullYear(), skrg.getMonth(), skrg.getDate() - hariKe, 0, 0, 0, 0);
-      
       const awalBulan = new Date(skrg.getFullYear(), skrg.getMonth(), 1, 0, 0, 0, 0);
-      
       const awalTahun = new Date(skrg.getFullYear(), 0, 1, 0, 0, 0, 0);
 
       let hari = 0, minggu = 0, bulan = 0, tahun = 0;
@@ -779,6 +993,9 @@
       updateEl('jmlMinggu', minggu);
       updateEl('jmlBulan', bulan);
       updateEl('jmlTahun', tahun);
+
+      // Trigger update grafik jika modul analytics aktif
+      perbaruiSemuaGrafik();
     }
 
     function mulaiPantau() {
@@ -831,6 +1048,10 @@
     function tampil() {
       const elCari = document.getElementById('inCari');
       const kataKunci = elCari ? elCari.value.trim().toLowerCase() : '';
+
+      if (kataKunci.length > 2) {
+        catatAktivitas('PENCARIAN', `Kata Kunci: "${kataKunci}"`, 'info');
+      }
 
       let filtered = semuaData.filter(doc => {
         if (!kataKunci) return true;
@@ -1074,7 +1295,7 @@
         waktu_ditemukan: firebase.firestore.FieldValue.serverTimestamp()
       };
 
-      // Optimistic Update: langsung tambahkan ke tampilan secara instan (0 ms)
+      // Optimistic Update
       const mockDoc = {
         id: 'temp_' + Date.now(),
         data: () => ({ ...dataBaru, waktu_ditemukan: new Date() })
@@ -1086,8 +1307,9 @@
       db.collection('pencarian').add(dataBaru)
         .then(() => { 
           showToast('Data berhasil disimpan!', 'success'); 
+          catatAktivitas('INPUT', `Data Baru Diinput: ${nopol} (${wilayah})`, 'success');
           tutupModalInput();
-          // Reset form input
+          // Reset form
           document.getElementById('inNopol').value = '';
           document.getElementById('inNoka').value = '';
           document.getElementById('inNosin').value = '';
@@ -1099,6 +1321,458 @@
         .catch(err => {
           showToast('Gagal menyimpan ke server!', 'error');
         });
+    }
+
+    /* FEATURE 3: ANALYTICS & GRAFIK (CHART.JS) LOGIC */
+    function gantiTabDashboard(tab) {
+      const btnTabel = document.getElementById('tabBtnTabel');
+      const btnAnalytics = document.getElementById('tabBtnAnalytics');
+      const panelTabel = document.getElementById('panelTabelView');
+      const panelAnalytics = document.getElementById('panelAnalytics');
+
+      if (tab === 'tabel') {
+        btnTabel.className = 'py-2 px-4 rounded-xl font-black text-xs flex items-center gap-2 bg-red-600 text-white shadow-lg transition';
+        btnAnalytics.className = 'py-2 px-4 rounded-xl font-bold text-xs flex items-center gap-2 bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition';
+        panelTabel.classList.remove('hidden');
+        panelAnalytics.classList.add('hidden');
+      } else {
+        btnAnalytics.className = 'py-2 px-4 rounded-xl font-black text-xs flex items-center gap-2 bg-cyan-600 text-white shadow-lg transition';
+        btnTabel.className = 'py-2 px-4 rounded-xl font-bold text-xs flex items-center gap-2 bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition';
+        panelTabel.classList.add('hidden');
+        panelAnalytics.classList.remove('hidden');
+        perbaruiSemuaGrafik();
+      }
+    }
+
+    function perbaruiSemuaGrafik() {
+      if (document.getElementById('panelAnalytics').classList.contains('hidden')) return;
+
+      // 1. Data Grafik Tren 30 Hari
+      const countsByDate = {};
+      const dateLabels = [];
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = `${d.getDate()}/${d.getMonth()+1}`;
+        dateLabels.push(dateStr);
+        countsByDate[dateStr] = 0;
+      }
+
+      // 2. Data Breakdown Wilayah & Seri
+      const wilayahCount = {};
+      const seriCount = {};
+
+      semuaData.forEach(doc => {
+        const d = typeof doc.data === 'function' ? doc.data() : doc.data;
+        const tgl = parseTanggalData(d);
+        if (tgl) {
+          const dateStr = `${tgl.getDate()}/${tgl.getMonth()+1}`;
+          if (countsByDate[dateStr] !== undefined) countsByDate[dateStr]++;
+        }
+
+        const w = ambilWilayah(d);
+        if (w !== '-') wilayahCount[w] = (wilayahCount[w] || 0) + 1;
+
+        const s = ambilSeri(d);
+        if (s !== '-') seriCount[s] = (seriCount[s] || 0) + 1;
+      });
+
+      // Chart 1: Line Chart Tren Waktu
+      const ctxTren = document.getElementById('chartTrenCanvas')?.getContext('2d');
+      if (ctxTren) {
+        if (chartTren) chartTren.destroy();
+        chartTren = new Chart(ctxTren, {
+          type: 'line',
+          data: {
+            labels: dateLabels,
+            datasets: [{
+              label: 'Temuan Kendaraan',
+              data: dateLabels.map(l => countsByDate[l]),
+              borderColor: '#22d3ee',
+              backgroundColor: 'rgba(34, 211, 238, 0.15)',
+              fill: true,
+              tension: 0.4,
+              borderWidth: 2,
+              pointBackgroundColor: '#ff2233'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } },
+              y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' }, beginAtZero: true }
+            }
+          }
+        });
+      }
+
+      // Chart 2: Doughnut Chart Wilayah Hotspots
+      const ctxWilayah = document.getElementById('chartWilayahCanvas')?.getContext('2d');
+      if (ctxWilayah) {
+        const sortedWilayah = Object.entries(wilayahCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
+        if (chartWilayah) chartWilayah.destroy();
+        chartWilayah = new Chart(ctxWilayah, {
+          type: 'doughnut',
+          data: {
+            labels: sortedWilayah.map(w => w[0]),
+            datasets: [{
+              data: sortedWilayah.map(w => w[1]),
+              backgroundColor: ['#ff2233', '#34d399', '#fbbf24', '#22d3ee', '#e879f9'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { color: '#f8fafc', font: { size: 10 } } }
+            }
+          }
+        });
+      }
+
+      // Chart 3: Bar Chart Seri Kendaraan
+      const ctxSeri = document.getElementById('chartSeriCanvas')?.getContext('2d');
+      if (ctxSeri) {
+        const sortedSeri = Object.entries(seriCount).sort((a,b) => b[1] - a[1]).slice(0, 8);
+        if (chartSeri) chartSeri.destroy();
+        chartSeri = new Chart(ctxSeri, {
+          type: 'bar',
+          data: {
+            labels: sortedSeri.map(s => s[0]),
+            datasets: [{
+              label: 'Jumlah Seri',
+              data: sortedSeri.map(s => s[1]),
+              backgroundColor: '#34d399',
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+              y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' }, beginAtZero: true }
+            }
+          }
+        });
+      }
+    }
+
+    /* FEATURE 1: MODUL EKSPOR, IMPOR & BACKUP DATA */
+    function bukaModalEkspor() { document.getElementById('modalEkspor').classList.remove('hidden'); }
+    function tutupModalEkspor() { document.getElementById('modalEkspor').classList.add('hidden'); }
+    function bukaModalImpor() { document.getElementById('modalImpor').classList.remove('hidden'); }
+    function tutupModalImpor() { document.getElementById('modalImpor').classList.add('hidden'); }
+
+    function DapatkanExportArray() {
+      return semuaData.map((doc, idx) => {
+        const d = typeof doc.data === 'function' ? doc.data() : doc.data;
+        const tgl = parseTanggalData(d);
+        const jsonLengkap = buatStrukturJsonLengkap(d);
+
+        // Ekspor seluruh atribut standar dan terstruktur secara mendalam
+        const row = {
+          "NO": idx + 1,
+          "ID_FIRESTORE": doc.id,
+          "WAKTU_PENEMUAN": tgl ? tgl.toLocaleString('id-ID') : '-',
+          "WILAYAH": ambilWilayah(d),
+          "NOPOL": ambilPlat(d),
+          "SERI": ambilSeri(d),
+          "NOKA": ambilNoka(d),
+          "NOSIN": ambilNosin(d),
+          "NAMA_PEMILIK": jsonLengkap.NamaPemilik || '-',
+          "NO_KTP": jsonLengkap.NoKTP || '-',
+          "NO_KK": jsonLengkap.NoKK || '-',
+          "NO_HP": jsonLengkap.NoHP || '-',
+          "EMAIL": jsonLengkap.Email || '-',
+          "PEKERJAAN": jsonLengkap.Pekerjaan || '-',
+          "ALAMAT": jsonLengkap.Alamat || '-',
+          "RT": jsonLengkap.RT || 0,
+          "RW": jsonLengkap.RW || 0,
+          "MERK": jsonLengkap.Merk || '-',
+          "TYPE": jsonLengkap.Type || '-',
+          "TAHUN": jsonLengkap.TahunPembuatan || '-',
+          "CC": jsonLengkap.IsiCylinder || '-',
+          "BBM": jsonLengkap.NamaBBM || '-',
+          "WARNA": jsonLengkap.Warna || '-',
+          "WARNA_TNKB": jsonLengkap.WarnaTNKB || '-',
+          "JENIS_KENDARAAN": jsonLengkap.JenisKendaraan || '-',
+          "MODEL_KENDARAAN": jsonLengkap.NamaModelKendaraan || '-',
+          "SUMBU": jsonLengkap.JumlahSumbu || '-',
+          "RODA": jsonLengkap.JumlahRoda || '-',
+          "NO_BPKB": jsonLengkap.NoBPKB || '-',
+          "NO_STNK": jsonLengkap.NoSTNK || '-',
+          "TGL_STNK": jsonLengkap.TanggalSTNK || '-',
+          "TGL_DAFTAR": jsonLengkap.TanggalDaftar || '-',
+          "NO_FAKTUR": jsonLengkap.NoFaktur || '-',
+          "TGL_FAKTUR": jsonLengkap.TanggalFaktur || '-',
+          "TGL_PENGESAHAN": jsonLengkap.TanggalPengesahan || '-',
+          "POLDA": jsonLengkap.NamaPolda || '-',
+          "LOKASI_GPS": ambilLokasiGps(d),
+          "MAPS_URL": ambilMapsUrl(d)
+        };
+
+        // Sertakan semua field custom tambahan yang ada di dokumen Firebase
+        Object.keys(d).forEach(k => {
+          if (k === 'waktu_ditemukan') return;
+          if (!(k in row)) {
+            let val = d[k];
+            if (typeof val === 'object' && val !== null) {
+              val = JSON.stringify(val);
+            }
+            row[k] = val !== undefined && val !== null ? val : '-';
+          }
+        });
+
+        return row;
+      });
+    }
+
+    function eksporExcel() {
+      const dataArr = DapatkanExportArray();
+      if (dataArr.length === 0) { showToast('Database kosong!', 'error'); return; }
+
+      const ws = XLSX.utils.json_to_sheet(dataArr);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Database Vehicle");
+      
+      const fileName = `Database_PusatKontrol_${new Date().toISOString().slice(0,10)}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      
+      catatAktivitas('EKSPOR', `Ekspor Excel ${dataArr.length} Data Lengkap (${fileName})`, 'success');
+      showToast('File Excel Berhasil Diunduh dengan Atribut Lengkap!', 'success');
+      tutupModalEkspor();
+    }
+
+    function eksporCSV() {
+      const dataArr = DapatkanExportArray();
+      if (dataArr.length === 0) { showToast('Database kosong!', 'error'); return; }
+
+      const ws = XLSX.utils.json_to_sheet(dataArr);
+      const csv = XLSX.utils.sheet_to_csv(ws);
+      
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Database_PusatKontrol_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      catatAktivitas('EKSPOR', `Ekspor CSV ${dataArr.length} Data Lengkap`, 'success');
+      showToast('File CSV Berhasil Diunduh dengan Atribut Lengkap!', 'success');
+      tutupModalEkspor();
+    }
+
+    function siapkanTampilanCetak() {
+      const printBox = document.getElementById('printReportArea');
+      if (!printBox) return;
+
+      const dataArr = semuaData;
+      const tglCetak = new Date().toLocaleString('id-ID');
+
+      let tableRows = dataArr.map((doc, idx) => {
+        const d = typeof doc.data === 'function' ? doc.data() : doc.data;
+        const jsonLengkap = buatStrukturJsonLengkap(d);
+        const tgl = parseTanggalData(d);
+        return `
+          <tr>
+            <td style="border: 1px solid #000; padding: 4px; text-align: center;">${idx + 1}</td>
+            <td style="border: 1px solid #000; padding: 4px;"><b>${ambilPlat(d)}</b></td>
+            <td style="border: 1px solid #000; padding: 4px;">${ambilWilayah(d)} / ${ambilSeri(d)}</td>
+            <td style="border: 1px solid #000; padding: 4px;">${ambilNoka(d)}</td>
+            <td style="border: 1px solid #000; padding: 4px;">${ambilNosin(d)}</td>
+            <td style="border: 1px solid #000; padding: 4px;">${jsonLengkap.NamaPemilik || '-'}</td>
+            <td style="border: 1px solid #000; padding: 4px;">${jsonLengkap.Merk || '-'} ${jsonLengkap.Type || ''} (${jsonLengkap.Warna || '-'})</td>
+            <td style="border: 1px solid #000; padding: 4px;">${ambilLokasiGps(d)}</td>
+            <td style="border: 1px solid #000; padding: 4px;">${tgl ? tgl.toLocaleString('id-ID') : '-'}</td>
+          </tr>
+        `;
+      }).join('');
+
+      printBox.innerHTML = `
+        <div style="font-family: Arial, sans-serif; padding: 10px; color: #000; background: #fff;">
+          <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px;">
+            <h2 style="margin: 0; font-size: 18px; font-weight: bold;">PUSAT KONTROL DATABASE REAL-TIME</h2>
+            <p style="margin: 4px 0 0 0; font-size: 12px;">LAPORAN RESMI REKAPITULASI DATA VEHICLE / KENDARAAN</p>
+            <p style="margin: 2px 0 0 0; font-size: 10px; color: #555;">Dicetak Pada: ${tglCetak} | Total Data: ${dataArr.length} Record</p>
+          </div>
+
+          <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+            <thead>
+              <tr style="background-color: #f0f0f0;">
+                <th style="border: 1px solid #000; padding: 5px;">NO</th>
+                <th style="border: 1px solid #000; padding: 5px;">NOPOL</th>
+                <th style="border: 1px solid #000; padding: 5px;">WIL/SERI</th>
+                <th style="border: 1px solid #000; padding: 5px;">NOKA</th>
+                <th style="border: 1px solid #000; padding: 5px;">NOSIN</th>
+                <th style="border: 1px solid #000; padding: 5px;">PEMILIK</th>
+                <th style="border: 1px solid #000; padding: 5px;">MERK/TIPE/WARNA</th>
+                <th style="border: 1px solid #000; padding: 5px;">LOKASI GPS</th>
+                <th style="border: 1px solid #000; padding: 5px;">WAKTU PENEMUAN</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function cetakLaporanPdf() {
+      if (semuaData.length === 0) {
+        showToast('Database kosong, tidak ada data untuk dicetak!', 'error');
+        return;
+      }
+      siapkanTampilanCetak();
+      catatAktivitas('CETAK', `Cetak Laporan PDF (${semuaData.length} Data)`, 'info');
+      tutupModalEkspor();
+      setTimeout(() => {
+        window.print();
+      }, 200);
+    }
+
+    function prosesFileImpor(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheet];
+          const jsonRaw = XLSX.utils.sheet_to_json(worksheet);
+
+          if (!jsonRaw || jsonRaw.length === 0) {
+            showToast('File Excel/CSV Kosong atau format tidak dikenali', 'error');
+            return;
+          }
+
+          dataImporParsed = jsonRaw.map(row => ({
+            NOPOL: String(row.NOPOL || row.nopol || row.plat || row.Plat || '').trim().toUpperCase(),
+            NOKA: String(row.NOKA || row.noka || row.no_rangka || row.NoRangka || '-').trim().toUpperCase(),
+            NOSIN: String(row.NOSIN || row.nosin || row.no_mesin || row.NoMesin || '-').trim().toUpperCase(),
+            WILAYAH: String(row.WILAYAH || row.wilayah || row.area || 'B').trim().toUpperCase(),
+            SERI: String(row.SERI || row.seri || '-').trim().toUpperCase(),
+            waktu_ditemukan: firebase.firestore.FieldValue.serverTimestamp()
+          })).filter(item => item.NOPOL !== '');
+
+          document.getElementById('txtJumlahBaris').textContent = `${dataImporParsed.length} Baris Valid`;
+          document.getElementById('previewDataText').textContent = JSON.stringify(dataImporParsed.slice(0, 3), null, 2) + "\n...";
+          document.getElementById('previewImporBox').classList.remove('hidden');
+          showToast(`File dibaca: ${dataImporParsed.length} data siap diunggah`, 'info');
+        } catch(err) {
+          showToast('Gagal membaca file Excel/CSV', 'error');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function eksekusiImporFirestore() {
+      if (!dataImporParsed || dataImporParsed.length === 0) return;
+
+      const btn = document.getElementById('btnProsesImpor');
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mengunggah...`;
+
+      let batch = db.batch();
+      let count = 0;
+      let totalSukses = 0;
+
+      dataImporParsed.forEach((item, index) => {
+        const docRef = db.collection('pencarian').doc();
+        batch.set(docRef, item);
+        count++;
+
+        if (count === 400 || index === dataImporParsed.length - 1) {
+          batch.commit();
+          totalSukses += count;
+          batch = db.batch();
+          count = 0;
+        }
+      });
+
+      catatAktivitas('IMPOR_MASSAL', `Berhasil Impor Massal ${dataImporParsed.length} Data dari Excel`, 'success');
+      showToast(`Berhasil Mengunggah ${dataImporParsed.length} Data ke Database!`, 'success');
+      
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-database"></i> UNGGAH KE DATABASE FIRESTORE`;
+      document.getElementById('previewImporBox').classList.add('hidden');
+      dataImporParsed = [];
+      tutupModalImpor();
+    }
+
+    /* FEATURE 5: AUDIT LOG & RIWAYAT AKTIVITAS POSKO LOGIC */
+    function catatAktivitas(kategori, deskripsi, tipe = 'info') {
+      const logBaru = {
+        id: 'log_' + Date.now(),
+        waktu: new Date().toISOString(),
+        kategori: kategori,
+        deskripsi: deskripsi,
+        tipe: tipe
+      };
+      let logs = JSON.parse(localStorage.getItem('audit_logs') || '[]');
+      logs.unshift(logBaru);
+      if (logs.length > 300) logs = logs.slice(0, 300); // Batas simpan 300 log terakhir
+      localStorage.setItem('audit_logs', JSON.stringify(logs));
+      perbaruiTampilanAuditLog();
+    }
+
+    function bukaModalAuditLog() {
+      document.getElementById('modalAuditLog').classList.remove('hidden');
+      perbaruiTampilanAuditLog();
+    }
+
+    function tutupModalAuditLog() {
+      document.getElementById('modalAuditLog').classList.add('hidden');
+    }
+
+    function hapusRiwayatLog() {
+      localStorage.removeItem('audit_logs');
+      perbaruiTampilanAuditLog();
+      showToast('Riwayat Log Berhasil Dibersihkan', 'info');
+    }
+
+    function perbaruiTampilanAuditLog() {
+      const logs = JSON.parse(localStorage.getItem('audit_logs') || '[]');
+      const container = document.getElementById('listAuditLog');
+      const countEl = document.getElementById('cntAuditLog');
+      
+      if (countEl) countEl.textContent = logs.length;
+      if (!container) return;
+
+      if (logs.length === 0) {
+        container.innerHTML = `<div class="text-slate-500 text-center py-8">Belum ada catatan riwayat aktivitas.</div>`;
+        return;
+      }
+
+      container.innerHTML = logs.map(log => {
+        let badgeColor = 'bg-slate-800 text-slate-300';
+        if (log.tipe === 'success') badgeColor = 'bg-emerald-950 text-emerald-400 border border-emerald-800';
+        else if (log.tipe === 'danger') badgeColor = 'bg-red-950 text-red-400 border border-red-800';
+        else if (log.tipe === 'warning') badgeColor = 'bg-amber-950 text-amber-400 border border-amber-800';
+
+        const d = new Date(log.waktu);
+        const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')} - ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+
+        return `
+          <div class="p-2.5 bg-black border border-slate-800 rounded-xl space-y-1">
+            <div class="flex items-center justify-between text-[10px]">
+              <span class="px-2 py-0.5 rounded-md font-bold uppercase ${badgeColor}">${log.kategori}</span>
+              <span class="text-slate-500">${timeStr}</span>
+            </div>
+            <div class="text-xs text-slate-200 font-sans">${log.deskripsi}</div>
+          </div>
+        `;
+      }).join('');
     }
 
     function bukaModalWatchlist() { 
@@ -1117,6 +1791,7 @@
         localStorage.setItem('watchlist_nopol', JSON.stringify(watchlistNopol));
         input.value = '';
         perbaruiTampilanWatchlist();
+        catatAktivitas('WATCHLIST', `Target Baru Ditambahkan: ${val}`, 'warning');
         showToast(`Target ${val} ditambahkan ke Watchlist`, 'success');
         tampil();
       }
@@ -1126,6 +1801,7 @@
       watchlistNopol = watchlistNopol.filter(w => w !== target);
       localStorage.setItem('watchlist_nopol', JSON.stringify(watchlistNopol));
       perbaruiTampilanWatchlist();
+      catatAktivitas('WATCHLIST', `Target Dihapus: ${target}`, 'info');
       showToast(`Target ${target} dihapus`, 'info');
       tampil();
     }
@@ -1189,6 +1865,7 @@ Terima kasih.`;
       if (!doc) return;
       const d = typeof doc.data === 'function' ? doc.data() : doc.data;
       const pesan = buatPesanWa(d);
+      catatAktivitas('BAGIKAN_WA', `Membagikan Laporan WA Plat: ${ambilPlat(d)}`, 'info');
       const url = `https://wa.me/?text=${encodeURIComponent(pesan)}`;
       window.open(url, '_blank');
     }
