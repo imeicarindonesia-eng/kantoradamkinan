@@ -1,2110 +1,919 @@
 <!DOCTYPE html>
-<html lang="id" class="dark h-full bg-black">
+<html lang="id" class="notranslate" translate="no">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>DATABASE REAL-TIME - PUSAT KONTROL V4.8</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
+    <title>Unggah Data Kendaraan - Complete 15 Fields Multi-Alias Mapper</title>
 
-  <script>
-    window.tailwind = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brandRed: '#ff2233',
-            emeraldNeon: '#34d399',
-            amberGold: '#fbbf24',
-            electricCyan: '#22d3ee',
-          },
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            mono: ['JetBrains Mono', 'Consolas', 'monospace']
-          }
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Firebase 9.22.2 Compat SDK (App, Database, Firestore) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+    <!-- SheetJS (XLSX Fast Parser) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- PapaParse (CSV Fast Parser) -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0e1117;
+            --card-bg: #161b22;
+            --card-border: #30363d;
+            --primary-red: #dc2626;
+            --primary-red-hover: #b91c1c;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --accent-blue: #3b82f6;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
         }
-      }
-    };
-  </script>
-  <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Font Awesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+        }
 
-  <!-- Chart.js for Analytics -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d1117;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-red);
+        }
 
-  <!-- SheetJS (XLSX) for Excel Export & Import -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+        .dropzone-active {
+            background-color: rgba(220, 38, 38, 0.15) !important;
+            border-color: #f87171 !important;
+            transform: scale(0.99);
+        }
 
-  <!-- PDF.js for PDF File Parsing -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+        #debugConsole {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
 
-  <!-- Firebase Compat SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+        .log-info { color: #9ca3af; }
+        .log-success { color: #34d399; font-weight: 600; }
+        .log-warn { color: #fbbf24; font-weight: 600; }
+        .log-err { color: #f87171; font-weight: bold; }
 
-  <style>
-    * {
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #000000 !important;
-      background-image: 
-        radial-gradient(at 50% 0%, rgba(255, 34, 51, 0.15) 0px, transparent 65%),
-        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 60%);
-      background-attachment: fixed;
-    }
-
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #000000;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #33334d;
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #ff2233;
-    }
-
-    @keyframes statPop {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.12); filter: brightness(1.3); }
-      100% { transform: scale(1); }
-    }
-
-    .stat-updated {
-      animation: statPop 0.4s ease-in-out;
-    }
-
-    @keyframes emergencyFlash {
-      0%, 100% { background-color: rgba(255, 34, 51, 0.2); box-shadow: inset 0 0 50px rgba(255,34,51,0.8); }
-      50% { background-color: rgba(255, 34, 51, 0.7); box-shadow: inset 0 0 100px rgba(255,255,255,0.9); }
-    }
-
-    .siren-active {
-      animation: emergencyFlash 0.5s infinite alternate;
-    }
-
-    .glass-panel {
-      background: rgba(10, 10, 14, 0.98);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-
-    @media print {
-      body { background: white !important; color: black !important; }
-      .no-print { display: none !important; }
-      .print-only { display: block !important; }
-    }
-  </style>
+        th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+    </style>
 </head>
-<body id="bodyRoot" class="text-slate-100 min-h-screen flex flex-col justify-between antialiased selection:bg-red-500 selection:text-white">
+<body class="p-3 sm:p-6">
 
-  <!-- Toast Notification Container -->
-  <div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 no-print"></div>
-
-  <!-- Emergency Siren Overlay Banner -->
-  <div id="emergencyBanner" class="hidden fixed top-0 inset-x-0 z-50 bg-red-600 text-white font-black py-3 px-4 text-center shadow-2xl flex items-center justify-between animate-bounce">
-    <div class="flex items-center gap-2 mx-auto text-sm sm:text-base">
-      <i class="fa-solid fa-triangle-exclamation text-xl animate-spin"></i>
-      <span id="emergencyMsg">PERINGATAN TARGET KHUSUS TERDETEKSI!</span>
-    </div>
-    <button onclick="matikanSirene()" class="bg-black text-red-400 text-xs px-3 py-1.5 rounded-lg border border-red-500 hover:bg-slate-900 active:scale-95 transition">
-      MATIKAN SIRINE
-    </button>
-  </div>
-
-  <div class="max-w-7xl w-full mx-auto p-3 sm:p-5 flex-grow">
-
-    <!-- LOGIN SCREEN -->
-    <div id="layarMasuk" class="min-h-[85vh] flex flex-col justify-center items-center px-4 no-print">
-      <div class="w-full max-w-md">
-        <!-- Logo & Title -->
-        <div class="text-center mb-8">
-          <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-red-950/90 border-2 border-red-500 text-red-400 mb-4 shadow-xl shadow-red-600/40">
-            <i class="fa-solid fa-shield-halved text-4xl"></i>
-          </div>
-          <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">
-            PUSAT KONTROL <span class="text-red-500 underline decoration-red-500 underline-offset-4">DATABASE</span>
-          </h1>
-        </div>
-
-        <!-- Login Card -->
-        <div class="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl border-2 border-slate-800">
-          <div class="space-y-4">
-            <div>
-              <label for="kunci" class="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-2">
-                Kunci Akses Sistem
-              </label>
-              <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <i class="fa-solid fa-key text-sm"></i>
+    <div class="max-w-7xl mx-auto space-y-5">
+        
+        <!-- App Header Bar -->
+        <header class="bg-[#161b22] border border-[#30363d] rounded-xl p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
+            <div class="flex items-center gap-3">
+                <div class="bg-red-600/20 p-3 rounded-xl border border-red-500/30 text-2xl">
+                    🔥
                 </div>
-                <input 
-                  type="password" 
-                  id="kunci" 
-                  placeholder="Masukkan Kunci Akses (PIN)" 
-                  onkeydown="if(event.key==='Enter') masuk()"
-                  class="w-full pl-10 pr-10 py-3.5 bg-black border-2 border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/40 font-mono text-sm transition-all"
-                >
-                <button 
-                  type="button" 
-                  onclick="toggleShowPin()" 
-                  class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-white"
-                >
-                  <i id="iconShowPin" class="fa-solid fa-eye text-sm"></i>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">
+                        Unggah Data Kendaraan <span class="text-red-500 text-sm block sm:inline font-semibold">(Complete 15 Fields Multi-Alias)</span>
+                    </h1>
+                    <p class="text-xs text-gray-400 mt-0.5">Mendukung Nopol, Noka, Nosin, BPKB, STNK, NIK, Nama, MSSDN, Pekerjaan, Merek, Type, Warna, Tahun, Cylinder, BBM</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+                <div class="bg-[#0d1117] border border-[#30363d] px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2">
+                    <span id="firestoreStatusDot" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span>Firestore ('pencarian'):</span>
+                    <strong id="headerFirestoreCount" class="text-amber-400 font-bold">Memeriksa...</strong>
+                </div>
+                <button onclick="cekTotalDatabaseCloud()" class="bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-gray-200 text-xs px-3 py-2 rounded-lg font-semibold transition active:scale-95">
+                    🔄 Refresh Status
                 </button>
-              </div>
             </div>
+        </header>
 
-            <button 
-              onclick="masuk()" 
-              class="w-full py-3.5 px-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 active:scale-[0.98] text-white font-black rounded-xl shadow-lg shadow-red-950/80 transition duration-200 flex items-center justify-center gap-2 text-sm tracking-wider"
-            >
-              <span>MASUK SISTEM</span>
-              <i class="fa-solid fa-arrow-right text-xs"></i>
+        <!-- Firestore Compatibility Notification Banner -->
+        <div class="bg-gradient-to-r from-red-950/80 to-[#161b22] border border-red-500/40 rounded-xl p-4 shadow-md flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+            <div class="text-xs text-gray-200 leading-relaxed">
+                <span class="font-bold text-red-400 block text-sm mb-0.5">🎯 INTEGRASI 15 FIELD LENGKAP APLIKASI LAIN:</span>
+                Setiap dokumen Firestore di koleksi <code class="bg-[#0d1117] px-1.5 py-0.5 rounded border border-red-500/30 text-amber-300 font-mono">db.collection('pencarian')</code> secara otomatis menyimpan variasi field baku:
+                <div class="flex flex-wrap gap-1 mt-1 font-mono text-[10px]">
+                    <span class="bg-[#0d1117] text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">NO.PLAT</span>
+                    <span class="bg-[#0d1117] text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">MEREK</span>
+                    <span class="bg-[#0d1117] text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">TYPE</span>
+                    <span class="bg-[#0d1117] text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">TAHUN</span>
+                    <span class="bg-[#0d1117] text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">WARNA</span>
+                    <span class="bg-[#0d1117] text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">CYLINDER</span>
+                    <span class="bg-[#0d1117] text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">NAMA BBM</span>
+                    <span class="bg-[#0d1117] text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">NOKA</span>
+                    <span class="bg-[#0d1117] text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">NOSIN</span>
+                    <span class="bg-[#0d1117] text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">NO. BPKB</span>
+                    <span class="bg-[#0d1117] text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">NO. STNK</span>
+                    <span class="bg-[#0d1117] text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">NAMA</span>
+                    <span class="bg-[#0d1117] text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">NIK</span>
+                    <span class="bg-[#0d1117] text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">MSSDN</span>
+                    <span class="bg-[#0d1117] text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">PEKERJAAN</span>
+                </div>
+            </div>
+            <button onclick="jalankanDemoFirestore1Click()" class="w-full lg:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition active:scale-95 whitespace-nowrap shadow-md flex items-center justify-center gap-1.5">
+                🧪 TES 1-CLICK DEMO (LENGKAP 15 FIELD)
             </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- MAIN DASHBOARD -->
-    <div id="lap" class="hidden space-y-4 sm:space-y-5 pb-12">
-
-      <!-- Header & System Clock -->
-      <div class="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-2 border-slate-800 shadow-2xl">
-        <div class="flex items-center justify-between w-full md:w-auto gap-3">
-          <div class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-red-950 border-2 border-red-500 text-red-400 flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-900/50">
-              <i class="fa-solid fa-database text-2xl"></i>
-            </div>
-            <div>
-              <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
-                <span>PUSAT KONTROL</span>
-                <span class="text-red-500 drop-shadow-[0_0_10px_rgba(255,34,51,0.6)]">DATABASE</span>
-              </h1>
-              <!-- Status Terhubung -->
-              <div class="flex items-center gap-1.5 text-xs font-semibold text-red-400 mt-1">
-                <i class="fa-solid fa-signal text-white-400 animate-pulse text-[11px]"></i>
-                <span class="font-mono text-[11px]">TERHUBUNG</span>
-              </div>
-            </div>
-          </div>
         </div>
 
-        <!-- Live Clock, Voice & Audio Controls -->
-        <div class="flex flex-wrap items-center justify-between md:justify-end gap-2 bg-black/90 p-2.5 px-3 sm:px-4 rounded-xl border border-slate-800">
-          <div class="text-left md:text-right pr-2 border-r border-slate-800">
-            <div id="jamSistem" class="text-xl sm:text-2xl font-black text-white font-mono tracking-wider drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]">00:00:00</div>
-            <div id="tglSistem" class="text-[11px] text-slate-300 font-bold">Senin, 01 Januari 2026</div>
-          </div>
-
-          <div class="flex items-center gap-1 flex-wrap">
-            <!-- Test Audio & Floating Toast Button -->
-            <button 
-              onclick="ujiNotifikasiDanSuara()" 
-              title="Uji Notifikasi Melayang & Suara Pengumuman"
-              class="py-1.5 px-2.5 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/60 text-cyan-300 font-bold text-[11px] rounded-lg transition flex items-center gap-1 active:scale-95"
-            >
-              <i class="fa-solid fa-vial text-xs text-cyan-400"></i>
-              <span>UJI SUARA</span>
-            </button>
-
-            <!-- Audio Sound Bell Toggle -->
-            <button 
-              id="btnAudioSound"
-              onclick="toggleAudioAlert()" 
-              title="Aktifkan/Matikan Suara Nada Notifikasi"
-              class="p-2 text-slate-300 hover:text-emerald-400 hover:bg-slate-900 rounded-lg transition"
-            >
-              <i id="iconAudioSound" class="fa-solid fa-bell text-lg text-emerald-400"></i>
-            </button>
-
-            <!-- Voice TTS Announcer Toggle -->
-            <button 
-              id="btnVoiceAnnounce"
-              onclick="toggleVoiceAnnounce()" 
-              title="Aktifkan/Matikan Pengumuman Suara (TTS)"
-              class="p-2 text-slate-300 hover:text-cyan-400 hover:bg-slate-900 rounded-lg transition"
-            >
-              <i id="iconVoiceAnnounce" class="fa-solid fa-volume-high text-lg text-cyan-400"></i>
-            </button>
-
-            <!-- Audit Log Button -->
-            <button 
-              onclick="bukaModalAuditLog()" 
-              title="Riwayat Aktivitas Posko (Audit Log)"
-              class="p-2 text-amber-400 hover:text-amber-300 hover:bg-slate-900 rounded-lg transition border border-amber-950/80 relative"
-            >
-              <i class="fa-solid fa-clock-rotate-left text-lg"></i>
-            </button>
-
-            <!-- Watchlist / DPO Target Manager Button -->
-            <button 
-              onclick="bukaModalWatchlist()" 
-              title="Kelola Daftar Target Operasi Khusus (Blacklist)"
-              class="p-2 text-red-400 hover:text-red-300 hover:bg-slate-900 rounded-lg transition border border-red-950 relative"
-            >
-              <i class="fa-solid fa-bullseye text-lg"></i>
-              <span id="badgeWatchlist" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
-            </button>
-
-            <!-- Fullscreen Mode Toggle -->
-            <button 
-              onclick="toggleFullscreen()" 
-              title="Mode Layar Penuh TV Posko"
-              class="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-slate-900 rounded-lg transition"
-            >
-              <i class="fa-solid fa-expand text-lg"></i>
-            </button>
-
-            <!-- Export / Import Data Menu Buttons -->
-            <button 
-              onclick="bukaModalImpor()" 
-              title="Impor Data Massal dari Excel / CSV / PDF"
-              class="py-2 px-2.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-400 border border-emerald-600/80 font-extrabold text-xs rounded-lg transition shadow-md shadow-emerald-950 flex items-center gap-1.5 ml-1 active:scale-95"
-            >
-              <i class="fa-solid fa-file-import text-xs"></i>
-              <span class="hidden sm:inline">IMPOR DATA</span>
-            </button>
-
-            <button 
-              onclick="bukaModalEkspor()" 
-              title="Ekspor Laporan Data (Excel / CSV / PDF)"
-              class="py-2 px-2.5 bg-cyan-950/80 hover:bg-cyan-900 text-cyan-400 border border-cyan-600/80 font-extrabold text-xs rounded-lg transition shadow-md shadow-cyan-950 flex items-center gap-1.5 active:scale-95"
-            >
-              <i class="fa-solid fa-file-export text-xs"></i>
-              <span class="hidden sm:inline">EKSPOR</span>
-            </button>
-
-            <!-- Quick Add Button -->
-            <button 
-              onclick="bukaModalInput()" 
-              class="py-2 px-3 bg-red-600 hover:bg-red-500 active:scale-95 text-white font-extrabold text-xs rounded-lg transition shadow-md shadow-red-950 flex items-center gap-1.5 ml-1"
-            >
-              <i class="fa-solid fa-plus text-xs"></i>
-              <span class="hidden sm:inline">INPUT DATA</span>
-            </button>
-
-            <!-- Tombol ON/OFF Power & Standby -->
-            <button 
-              onclick="keluarSistem()" 
-              title="Matikan Standby & Keluar (Kunci Kembali)"
-              class="py-2 px-2.5 sm:px-3 bg-red-950/80 hover:bg-red-900 text-red-400 border border-red-600/80 font-extrabold text-xs rounded-lg transition shadow-md shadow-red-950 flex items-center gap-1.5 ml-1 active:scale-95"
-            >
-              <i class="fa-solid fa-power-off text-sm text-red-500 animate-pulse"></i>
-              <span>OFF</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB NAVIGATION MENU -->
-      <div class="flex items-center gap-2 border-b border-slate-800 pb-2">
-        <button 
-          id="tabBtnTabel" 
-          onclick="gantiTabDashboard('tabel')"
-          class="py-2 px-4 rounded-xl font-black text-xs flex items-center gap-2 bg-red-600 text-white shadow-lg transition"
-        >
-          <i class="fa-solid fa-table-list"></i>
-          <span>DATA TABEL REAL-TIME</span>
-        </button>
-        <button 
-          id="tabBtnAnalytics" 
-          onclick="gantiTabDashboard('analytics')"
-          class="py-2 px-4 rounded-xl font-bold text-xs flex items-center gap-2 bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition"
-        >
-          <i class="fa-solid fa-chart-line text-cyan-400"></i>
-          <span>DASHBOARD ANALYTICS & GRAFIK (CHART.JS)</span>
-        </button>
-      </div>
-
-      <!-- MODUL UTAMA DASHBOARD -->
-      <div id="modulUtama" class="space-y-4">
-        <!-- Statistics Grid Cards -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-          <!-- Hari ini -->
-          <div class="glass-panel rounded-xl p-3.5 sm:p-4 border-t-4 border-t-emerald-400 border-x border-b border-slate-800 bg-emerald-950/20 relative overflow-hidden shadow-lg">
-            <div class="text-[10px] sm:text-xs font-extrabold text-emerald-400 tracking-wider uppercase mb-1">HARI INI</div>
-            <div id="jmlHari" class="text-2xl sm:text-3xl font-black text-emerald-300 font-mono drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">0</div>
-            <i class="fa-solid fa-calendar-day absolute bottom-2 right-2 text-3xl text-emerald-400/15 pointer-events-none"></i>
-          </div>
-          <!-- Minggu ini -->
-          <div class="glass-panel rounded-xl p-3.5 sm:p-4 border-t-4 border-t-amber-400 border-x border-b border-slate-800 bg-amber-950/20 relative overflow-hidden shadow-lg">
-            <div class="text-[10px] sm:text-xs font-extrabold text-amber-400 tracking-wider uppercase mb-1">MINGGU INI</div>
-            <div id="jmlMinggu" class="text-2xl sm:text-3xl font-black text-amber-300 font-mono drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]">0</div>
-            <i class="fa-solid fa-calendar-week absolute bottom-2 right-2 text-3xl text-amber-400/15 pointer-events-none"></i>
-          </div>
-          <!-- Bulan ini -->
-          <div class="glass-panel rounded-xl p-3.5 sm:p-4 border-t-4 border-t-cyan-400 border-x border-b border-slate-800 bg-cyan-950/20 relative overflow-hidden shadow-lg">
-            <div class="text-[10px] sm:text-xs font-extrabold text-cyan-400 tracking-wider uppercase mb-1">BULAN INI</div>
-            <div id="jmlBulan" class="text-2xl sm:text-3xl font-black text-cyan-300 font-mono drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">0</div>
-            <i class="fa-solid fa-calendar-days absolute bottom-2 right-2 text-3xl text-cyan-400/15 pointer-events-none"></i>
-          </div>
-          <!-- Tahun ini -->
-          <div class="glass-panel rounded-xl p-3.5 sm:p-4 border-t-4 border-t-fuchsia-400 border-x border-b border-slate-800 bg-fuchsia-950/20 relative overflow-hidden shadow-lg">
-            <div class="text-[10px] sm:text-xs font-extrabold text-fuchsia-400 tracking-wider uppercase mb-1">TAHUN INI</div>
-            <div id="jmlTahun" class="text-2xl sm:text-3xl font-black text-fuchsia-300 font-mono drop-shadow-[0_0_8px_rgba(232,121,249,0.5)]">0</div>
-            <i class="fa-solid fa-calendar absolute bottom-2 right-2 text-3xl text-fuchsia-400/15 pointer-events-none"></i>
-          </div>
+        <!-- Live Diagnostic Console -->
+        <div class="bg-[#090d12] border border-[#1f2937] border-l-4 border-l-red-600 rounded-xl p-3 shadow-inner">
+            <div class="flex items-center justify-between text-xs font-semibold text-gray-400 mb-1.5 pb-1 border-b border-[#1f2937]">
+                <span>⚙️ LOG DIAGNOSTIK UTAMA (LIVE CONSOLE):</span>
+                <span id="txtLogCount" class="text-emerald-400 font-mono">0 Event</span>
+            </div>
+            <div id="debugConsole" class="text-[11px] leading-relaxed text-emerald-400 max-h-28 overflow-y-auto space-y-0.5">
+                <div>⚙️ Mengatur koneksi Cloud Firestore & Realtime Database...</div>
+            </div>
         </div>
 
-        <!-- PANEL DASHBOARD ANALYTICS & GRAFIK -->
-        <div id="panelAnalytics" class="hidden space-y-4">
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <!-- Grafik Tren Waktu Penemuan -->
-            <div class="lg:col-span-2 glass-panel rounded-2xl p-4 border-2 border-slate-800 shadow-xl space-y-2">
-              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-                <h3 class="text-xs font-black text-white flex items-center gap-2">
-                  <i class="fa-solid fa-chart-line text-cyan-400"></i>
-                  <span>TREN AKTIVITAS PENEMUAN KENDARAAN (30 HARI TERAKHIR)</span>
-                </h3>
-                <span class="text-[10px] text-cyan-400 font-mono">LIVE CHART</span>
-              </div>
-              <div class="h-64 w-full relative">
-                <canvas id="chartTrenCanvas"></canvas>
-              </div>
-            </div>
-
-            <!-- Grafik Breakdown Wilayah Hotspot -->
-            <div class="glass-panel rounded-2xl p-4 border-2 border-slate-800 shadow-xl space-y-2">
-              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-                <h3 class="text-xs font-black text-white flex items-center gap-2">
-                  <i class="fa-solid fa-map-pin text-red-500"></i>
-                  <span>RANKING WILAYAH TERBANYAK</span>
-                </h3>
-                <span class="text-[10px] text-red-400 font-mono">HOTSPOT</span>
-              </div>
-              <div class="h-64 w-full relative flex items-center justify-center">
-                <canvas id="chartWilayahCanvas"></canvas>
-              </div>
-            </div>
-          </div>
-
-          <!-- Grafik Distribusi Seri/Tipe Kendaraan -->
-          <div class="glass-panel rounded-2xl p-4 border-2 border-slate-800 shadow-xl space-y-2">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-              <h3 class="text-xs font-black text-white flex items-center gap-2">
-                <i class="fa-solid fa-chart-pie text-emerald-400"></i>
-                <span>DISTRIBUSI SERI & KATEGORI KENDARAAN</span>
-              </h3>
-              <span class="text-[10px] text-emerald-400 font-mono">SEBARAN SERI</span>
-            </div>
-            <div class="h-56 w-full relative">
-              <canvas id="chartSeriCanvas"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <!-- VIEW TABEL DATA -->
-        <div id="panelTabelView" class="space-y-4">
-          <!-- KOLOM PENCARIAN CEPAT -->
-          <div class="glass-panel rounded-2xl p-3 border-2 border-slate-800 shadow-xl flex items-center gap-3">
-            <div class="text-slate-400 pl-2">
-              <i class="fa-solid fa-magnifying-glass text-sm text-red-500 animate-pulse"></i>
-            </div>
-            <input 
-              type="text" 
-              id="inCari" 
-              oninput="tampil()" 
-              placeholder="Ketik Nopol, Noka, Nosin, Wilayah, Seri, atau Nama Pemilik..." 
-              class="w-full bg-transparent text-white text-xs sm:text-sm font-mono placeholder-slate-500 outline-none font-bold uppercase"
-            >
-            <button 
-              onclick="bersihkanPencarian()" 
-              title="Bersihkan Pencarian"
-              class="text-slate-500 hover:text-white px-2 py-1 text-xs transition"
-            >
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </div>
-
-          <!-- Data Table View -->
-          <div class="glass-panel rounded-2xl overflow-hidden border-2 border-slate-800 shadow-2xl">
-            <div class="overflow-x-auto">
-              <div class="min-w-[680px]">
-                <!-- Desktop Table Header -->
-                <div class="grid grid-cols-12 gap-1 p-3.5 px-4 bg-slate-950 text-[11px] font-black uppercase tracking-wider text-slate-300 border-b-2 border-slate-800 text-center">
-                  <div class="col-span-1">NO</div>
-                  <div class="col-span-2">WILAYAH</div>
-                  <div class="col-span-2">NOPOL</div>
-                  <div class="col-span-1">SERI</div>
-                  <div class="col-span-2">NOKA</div>
-                  <div class="col-span-2">NOSIN</div>
-                  <div class="col-span-2">WAKTU PENGECEKAN</div>
+        <!-- Settings Box -->
+        <div class="bg-[#161b22] border border-[#30363d] rounded-xl p-4 shadow-md">
+            <h3 class="text-xs font-bold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                ⚙️ Pengaturan Penanganan Data Duplikat & Impor
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div class="space-y-2">
+                    <label class="text-gray-400 font-semibold block">MODE DOKUMEN FIRESTORE ('pencarian'):</label>
+                    <div class="space-y-1.5">
+                        <label class="flex items-center gap-2 cursor-pointer text-gray-200 hover:text-white">
+                            <input type="radio" name="duplicateMode" value="merge" checked class="accent-red-600 w-4 h-4">
+                            <span>✨ <strong>Merge / Update:</strong> Memperbarui field dokumen Firestore tanpa menghapus data lama</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer text-gray-200 hover:text-white">
+                            <input type="radio" name="duplicateMode" value="overwrite" class="accent-red-600 w-4 h-4">
+                            <span>🔄 <strong>Set / Timpa:</strong> Mengganti total dokumen Firestore dengan data baru</span>
+                        </label>
+                    </div>
                 </div>
 
-                <!-- Scrollable List -->
-                <div id="daftarUtama" class="max-h-[540px] overflow-y-auto divide-y divide-slate-800/80 font-mono text-xs">
-                  <div class="p-12 text-center text-slate-400 space-y-3">
-                    <i class="fa-solid fa-circle-notch fa-spin text-3xl text-red-500"></i>
-                    <p class="font-sans text-xs font-semibold">Sedang memuat database Firestore secara real-time...</p>
-                  </div>
+                <div class="space-y-2 border-t md:border-t-0 md:border-l border-[#30363d] pt-3 md:pt-0 md:pl-4">
+                    <label class="text-gray-400 font-semibold block">SINKRONISASI DATABASE DUAL:</label>
+                    <div class="space-y-1.5">
+                        <label class="flex items-center gap-2 cursor-pointer text-gray-200 hover:text-white">
+                            <input type="checkbox" id="chkSyncFirestore" checked disabled class="accent-red-600 w-4 h-4">
+                            <span class="text-emerald-400 font-bold">🔥 Cloud Firestore (`db.collection('pencarian')`) [WAJIB]</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer text-gray-200 hover:text-white">
+                            <input type="checkbox" id="chkSyncRealtime" checked class="accent-red-600 w-4 h-4">
+                            <span>⚡ Realtime Database (`data_kendaraan`)</span>
+                        </label>
+                    </div>
                 </div>
-              </div>
             </div>
-          </div>
         </div>
 
-      </div>
+        <!-- Upload Dropzone Area -->
+        <div id="dropZone" onclick="document.getElementById('fileInput').click()" 
+             class="border-2 border-dashed border-red-600/70 bg-[#161b22]/90 hover:bg-red-950/20 rounded-xl p-8 text-center cursor-pointer transition-all duration-200 shadow-xl group">
+            <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">📥</div>
+            <p class="text-base font-bold text-white group-hover:text-red-400 transition-colors">
+                Tarik & Lepas File Ke Sini atau Klik Untuk Memilih File
+            </p>
+            <p class="text-xs text-gray-400 mt-1">Format Didukung: <strong>.XLSX, .XLS, dan .CSV</strong> (Auto-mapping Nopol, Noka, Nosin, BPKB, STNK, NIK, Nama, MSSDN, Pekerjaan, Merek, Type, Warna, Tahun, CC, BBM)</p>
+            
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" multiple class="hidden">
 
-    </div>
-  </div>
-
-  <!-- MODAL DETAIL DIALOG (FORMAT JSON SINTAKS TERSTRUKTUR) -->
-  <div id="modalLatar" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center no-print" onclick="if(event.target.id==='modalLatar') tutupDetail()">
-    <div class="glass-panel rounded-2xl border-2 border-slate-700 max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-      <div class="p-4 px-5 bg-black border-b-2 border-slate-800 flex items-center justify-between">
-        <h3 class="font-black text-sm text-white tracking-wide flex items-center gap-2">
-          <i class="fa-solid fa-code text-cyan-400"></i>
-          <span>RINCIAN DATA VEHICLE (JSON)</span>
-        </h3>
-        <button onclick="tutupDetail()" class="w-8 h-8 rounded-lg bg-slate-900 text-slate-300 hover:text-white flex items-center justify-center transition border border-slate-700">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div id="modalIsi" class="p-4 sm:p-5 overflow-y-auto space-y-2 text-xs font-mono"></div>
-      <div class="p-4 bg-black border-t-2 border-slate-800 flex gap-2">
-        <button onclick="salinJsonMentah()" class="w-1/2 py-3 bg-slate-900 hover:bg-slate-800 text-slate-100 font-bold rounded-xl transition text-xs border border-slate-700 active:scale-95 flex items-center justify-center gap-2">
-          <i class="fa-solid fa-copy"></i>
-          <span>SALIN JSON</span>
-        </button>
-        <button onclick="kirimWaDariModal()" class="w-1/2 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl transition text-xs shadow-lg shadow-emerald-950 flex items-center justify-center gap-2 active:scale-95">
-          <i class="fa-brands fa-whatsapp text-base"></i>
-          <span>WHATSAPP</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL QUICK INPUT DATA -->
-  <div id="modalInput" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center no-print" onclick="if(event.target.id==='modalInput') tutupModalInput()">
-    <div class="glass-panel rounded-2xl border-2 border-slate-700 max-w-md w-full p-5 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="font-black text-sm text-white">INPUT DATA KENDARAAN BARU</h3>
-        <button onclick="tutupModalInput()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-      <div class="space-y-3 font-mono text-xs">
-        <div><label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">NOPOL</label><input type="text" id="inNopol" placeholder="B 1234 ABC" class="w-full bg-black border border-slate-700 rounded-lg p-2.5 text-white font-bold uppercase outline-none focus:border-red-500"></div>
-        <div><label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">NOKA</label><input type="text" id="inNoka" placeholder="Nomor Rangka" class="w-full bg-black border border-slate-700 rounded-lg p-2.5 text-amber-300 font-bold uppercase outline-none focus:border-amber-500"></div>
-        <div><label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">NOSIN</label><input type="text" id="inNosin" placeholder="Nomor Mesin" class="w-full bg-black border border-slate-700 rounded-lg p-2.5 text-cyan-300 font-bold uppercase outline-none focus:border-cyan-500"></div>
-        <div><label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">WILAYAH</label><input type="text" id="inWilayah" placeholder="Contoh: Jakarta / Jabar" class="w-full bg-black border border-slate-700 rounded-lg p-2.5 text-emerald-300 font-bold uppercase outline-none focus:border-emerald-500"></div>
-        <div><label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">SERI</label><input type="text" id="inSeri" placeholder="Contoh: A / B / X" class="w-full bg-black border border-slate-700 rounded-lg p-2.5 text-fuchsia-300 font-bold uppercase outline-none focus:border-fuchsia-500"></div>
-        <div>
-          <label class="block text-slate-300 font-sans font-bold text-[11px] mb-1">TITIK LOKASI (GEOTAGGING GPS)</label>
-          <div class="flex gap-2">
-            <input type="text" id="inLokasi" placeholder="Koordinat GPS / Otomatis" readonly class="flex-1 bg-black border border-slate-700 rounded-lg p-2.5 text-emerald-400 font-bold font-mono outline-none text-xs">
-            <button type="button" onclick="dapatkanGps()" class="px-3 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 transition">
-              <i class="fa-solid fa-location-dot text-xs"></i>
-              <span>AMBIL GPS</span>
-            </button>
-          </div>
-          <input type="hidden" id="inMapsUrl" value="">
-        </div>
-      </div>
-      <button onclick="simpanDataBaru()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl transition text-xs shadow-lg active:scale-95">SIMPAN DATA</button>
-    </div>
-  </div>
-
-  <!-- MODAL IMPOR DATA MASSAL (EXCEL / CSV / PDF) -->
-  <div id="modalImpor" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center no-print" onclick="if(event.target.id==='modalImpor') tutupModalImpor()">
-    <div class="glass-panel rounded-2xl border-2 border-emerald-600 max-w-md w-full p-5 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="font-black text-sm text-emerald-400 flex items-center gap-2">
-          <i class="fa-solid fa-file-import"></i>
-          <span>IMPOR MASSAL (EXCEL / CSV / PDF)</span>
-        </h3>
-        <button onclick="tutupModalImpor()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-
-      <div class="space-y-3">
-        <p class="text-xs text-slate-300">Pilih file <b>.xlsx / .csv / .pdf</b> data kendaraan. Sistem akan membaca NAMA, NOPOL, NOKA, NOSIN, MERK, TYPE, JENIS, TAHUN, ALAMAT, WILAYAH, SERI, ASSET CODE, dll secara otomatis & menyaring data ganda paling lengkap.</p>
-        
-        <div class="border-2 border-dashed border-emerald-500/50 hover:border-emerald-400 rounded-xl p-6 text-center bg-emerald-950/20 cursor-pointer transition" onclick="document.getElementById('inputFileInput').click()">
-          <i class="fa-solid fa-cloud-arrow-up text-3xl text-emerald-400 mb-2"></i>
-          <p class="text-xs font-bold text-white">Klik untuk Pilih File Excel / CSV / PDF</p>
-          <p class="text-[10px] text-slate-400 mt-1">Format Dukungan: .xlsx, .xls, .csv, .pdf</p>
-          <input type="file" id="inputFileInput" accept=".xlsx, .xls, .csv, .pdf" onchange="prosesFileImpor(event)" class="hidden">
-        </div>
-
-        <div id="previewImporBox" class="hidden space-y-2 border border-slate-800 p-3 rounded-xl bg-black font-mono text-xs">
-          <div class="flex justify-between items-center text-emerald-400 font-bold text-[11px]">
-            <span>RINGKASAN IMPOR & DEDUPLIKASI:</span>
-            <span id="txtJumlahBaris" class="text-white">0 Data</span>
-          </div>
-          <div id="infoDeduplikasiBox" class="text-[11px] p-2 bg-slate-900 rounded border border-slate-800 text-slate-300 space-y-1 font-sans">
-            <div><i class="fa-solid fa-file-invoice text-cyan-400 mr-1"></i> Total Baris Dibaca: <b id="cntTotalRaw" class="text-white">0</b></div>
-            <div><i class="fa-solid fa-copy text-amber-400 mr-1"></i> Data Ganda Terdeteksi: <b id="cntGanda" class="text-amber-400">0</b></div>
-            <div><i class="fa-solid fa-check-double text-emerald-400 mr-1"></i> Hasil Penyaringan Terlengkap: <b id="cntHasil" class="text-emerald-400">0</b></div>
-          </div>
-          <div id="previewDataText" class="text-[10px] text-slate-300 max-h-32 overflow-y-auto font-mono bg-slate-950 p-2 rounded border border-slate-900 leading-relaxed whitespace-pre-wrap"></div>
-          
-          <button onclick="eksekusiImporFirestore()" id="btnProsesImpor" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-lg transition text-xs shadow-lg active:scale-95 flex items-center justify-center gap-2">
-            <i class="fa-solid fa-database"></i>
-            <span>UNGGAH DATA TERPILIH KE FIRESTORE</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL EKSPOR DATA -->
-  <div id="modalEkspor" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center no-print" onclick="if(event.target.id==='modalEkspor') tutupModalEkspor()">
-    <div class="glass-panel rounded-2xl border-2 border-cyan-600 max-w-md w-full p-5 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="font-black text-sm text-cyan-400 flex items-center gap-2">
-          <i class="fa-solid fa-file-export"></i>
-          <span>EKSPOR LAPORAN DATABASE</span>
-        </h3>
-        <button onclick="tutupModalEkspor()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-
-      <div class="space-y-3 font-sans">
-        <p class="text-xs text-slate-300">Pilih format unduhan data laporan yang diinginkan:</p>
-        
-        <div class="grid grid-cols-1 gap-2">
-          <button onclick="eksporExcel()" class="p-3 bg-slate-900 hover:bg-slate-800 border border-emerald-500/50 hover:border-emerald-400 rounded-xl text-left flex items-center gap-3 transition">
-            <i class="fa-solid fa-file-excel text-2xl text-emerald-400"></i>
-            <div>
-              <div class="text-xs font-bold text-white">Unduh Format Microsoft Excel (.xlsx)</div>
-              <div class="text-[10px] text-slate-400">Lengkap seluruh atribut data & timestamp</div>
+            <div class="mt-4 flex flex-wrap justify-center gap-2" onclick="event.stopPropagation()">
+                <button id="btnSelectFile" onclick="document.getElementById('fileInput').click()" 
+                        class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-5 py-2.5 rounded-lg shadow-md transition active:scale-95 flex items-center gap-2">
+                    📁 PILIH FILE EXCEL / CSV
+                </button>
             </div>
-          </button>
-
-          <button onclick="eksporCSV()" class="p-3 bg-slate-900 hover:bg-slate-800 border border-cyan-500/50 hover:border-cyan-400 rounded-xl text-left flex items-center gap-3 transition">
-            <i class="fa-solid fa-file-csv text-2xl text-cyan-400"></i>
-            <div>
-              <div class="text-xs font-bold text-white">Unduh Format CSV (.csv)</div>
-              <div class="text-[10px] text-slate-400">Cocok untuk integrasi ke sistem database lain</div>
-            </div>
-          </button>
-
-          <button onclick="cetakLaporanPdf()" class="p-3 bg-slate-900 hover:bg-slate-800 border border-red-500/50 hover:border-red-400 rounded-xl text-left flex items-center gap-3 transition">
-            <i class="fa-solid fa-print text-2xl text-red-400"></i>
-            <div>
-              <div class="text-xs font-bold text-white">Cetak Laporan PDF Siap Pakai</div>
-              <div class="text-[10px] text-slate-400">Tampilan dokumen laporan resmi cetak posko</div>
-            </div>
-          </button>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- MODAL WATCHLIST / BLACKLIST MANAGER -->
-  <div id="modalWatchlist" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center no-print" onclick="if(event.target.id==='modalWatchlist') tutupModalWatchlist()">
-    <div class="glass-panel rounded-2xl border-2 border-red-700 max-w-md w-full p-5 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="font-black text-sm text-red-400 flex items-center gap-2">
-          <i class="fa-solid fa-bullseye text-red-500"></i>
-          <span>DAFTAR TARGET (WATCHLIST)</span>
-        </h3>
-        <button onclick="tutupModalWatchlist()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-      <div class="flex gap-2">
-        <input type="text" id="inWatchlistNopol" placeholder="B 1011 NOC" class="flex-1 bg-black border border-slate-700 rounded-lg p-2 text-white font-mono text-xs uppercase outline-none focus:border-red-500">
-        <button onclick="tambahWatchlist()" class="px-4 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-lg active:scale-95 transition">TAMBAH</button>
-      </div>
-      <div id="listWatchlist" class="max-h-48 overflow-y-auto space-y-2 border border-slate-800 p-2 rounded-lg font-mono text-xs">
-        <div class="text-slate-500 text-center py-4">Belum ada target</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL AUDIT LOG -->
-  <div id="modalAuditLog" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-3 sm:p-4 flex items-center justify-center no-print" onclick="if(event.target.id==='modalAuditLog') tutupModalAuditLog()">
-    <div class="glass-panel rounded-2xl border-2 border-amber-600 max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-      <div class="p-4 px-5 bg-black border-b-2 border-slate-800 flex items-center justify-between">
-        <h3 class="font-black text-sm text-amber-400 tracking-wide flex items-center gap-2">
-          <i class="fa-solid fa-clock-rotate-left"></i>
-          <span>AUDIT LOG & RIWAYAT AKTIVITAS POSKO</span>
-        </h3>
-        <button onclick="tutupModalAuditLog()" class="w-8 h-8 rounded-lg bg-slate-900 text-slate-300 hover:text-white flex items-center justify-center transition border border-slate-700">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div class="p-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between text-xs font-mono">
-        <span class="text-slate-400">TOTAL RIWAYAT LOG: <b id="cntAuditLog" class="text-amber-400">0</b></span>
-        <button onclick="hapusRiwayatLog()" class="text-red-400 hover:text-red-300 text-[11px] font-bold"><i class="fa-solid fa-trash mr-1"></i>BERSIHKAN LOG</button>
-      </div>
-      <div id="listAuditLog" class="p-4 overflow-y-auto space-y-2 text-xs font-mono flex-grow">
-        <div class="text-slate-500 text-center py-8">Belum ada catatan riwayat aktivitas.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Area Khusus Cetak Dokumen Laporan PDF -->
-  <div id="printReportArea" class="hidden print-only"></div>
-
-  <footer class="py-4 text-center text-[11px] text-slate-500 font-mono font-bold border-t border-slate-900 bg-black no-print">
-    DATABASE REAL-TIME • PUSAT KONTROL V4.8
-  </footer>
-
-  <script>
-    const namaHari = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
-    const namaBulan = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-    const KUNCI_AKSES = "222222";
-
-    const COLUMN_ALIASES = {
-      NOPOL: ['NOPOL', 'Nopol', 'nopol', 'PLAT', 'Plat', 'plat', 'NO POL', 'No Pol', 'no pol', 'NO POLISI', 'No Polisi', 'no polisi', 'NO_POL', 'PLATNOMOR', 'PlatNomor', 'platnomor', 'NO_PLAT', 'NoPlat'],
-      NOKA: ['NOKA', 'Noka', 'noka', 'NO_RANGKA', 'No_Rangka', 'no_rangka', 'NORANGKA', 'NoRangka', 'norangka', 'NOMOR RANGKA', 'Nomor Rangka', 'nomor rangka', 'RANGKA', 'Rangka'],
-      NOSIN: ['NOSIN', 'Nosin', 'nosin', 'NO_MESIN', 'No_Mesin', 'no_mesin', 'NOMESIN', 'NoMesin', 'nomesin', 'NOMOR MESIN', 'Nomor Mesin', 'nomor mesin', 'MESIN', 'Mesin'],
-      WILAYAH: ['WILAYAH', 'Wilayah', 'wilayah', 'AREA', 'Area', 'area', 'SERI_WILAYAH', 'SeriWilayah', 'KOTA', 'PROVINSI'],
-      SERI: ['SERI', 'Seri', 'seri', 'KODE_SERI', 'KodeSeri'],
-      NamaPemilik: ['NAMA', 'Nama', 'nama', 'NAMA_PEMILIK', 'NamaPemilik', 'nama_pemilik', 'COSTUMER NAME', 'Costumer Name', 'costumer name', 'CUSTOMER_NAME', 'Customer Name', 'CUSTOMER', 'PEMILIK', 'Pemilik'],
-      Merk: ['MERK', 'Merk', 'merk', 'MEREK', 'Merek', 'merek', 'BRAND', 'Brand'],
-      Type: ['TYPE', 'Type', 'type', 'TIPE', 'Tipe', 'tipe', 'TYPE MOBIL', 'TYPE MOTOR', 'Type Mobil', 'Type Motor', 'MODEL', 'Model'],
-      JenisKendaraan: ['JENIS', 'Jenis', 'jenis', 'JENIS KENDARAAN', 'Jenis Kendaraan', 'jenis kendaraan', 'KATEGORI', 'Kategori'],
-      TahunPembuatan: ['TAHUN', 'Tahun', 'tahun', 'TAHUN KENDARAAN', 'Tahun Kendaraan', 'tahun kendaraan', 'THN', 'Thn'],
-      Alamat: ['ALAMAT', 'Alamat', 'alamat', 'ALAMAT PEMILIK', 'Alamat Pemilik'],
-      AssetCode: ['ASSET CODE', 'Asset Code', 'asset code', 'ASSET_CODE', 'AssetCode', 'asset_code', 'KODE ASSET', 'Kode Asset']
-    };
-
-    const FIREBASE_CONFIG = {
-      apiKey: "AIzaSyBonuHp4nd-YZKWV5IM_2HRCfJ2TQ4zJaY",
-      authDomain: "gen-lang-client-0221970857.firebaseapp.com",
-      databaseURL: "https://gen-lang-client-0221970857-default-rtdb.firebaseio.com",
-      projectId: "gen-lang-client-0221970857",
-      storageBucket: "gen-lang-client-0221970857.firebasestorage.app",
-      messagingSenderId: "483674298302",
-      appId: "1:483674298302:web:8c6ccf111af4de7bbecbef"
-    };
-
-    if (!firebase.apps.length) {
-      firebase.initializeApp(FIREBASE_CONFIG);
-    }
-    const db = firebase.firestore();
-    const auth = firebase.auth();
-
-    db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
-
-    let currentUserId = null;
-    auth.onAuthStateChanged(user => {
-      if (user) currentUserId = user.uid;
-      else auth.signInAnonymously().catch(() => {});
-    });
-
-    let semuaData = [];
-    let pengamat = null;
-    let docIdTerpilih = null;
-    let audioEnabled = true;
-    let voiceAnnounceEnabled = true;
-    let sireneAktif = false;
-    let sireneInterval = null;
-    let audioCtx = null;
-    let isInitialLoad = true;
-    let dataImporParsed = [];
-
-    let chartTren = null;
-    let chartWilayah = null;
-    let chartSeri = null;
-
-    let watchlistNopol = JSON.parse(localStorage.getItem('watchlist_nopol') || '[]');
-
-    function perbaruiWaktuSistem() {
-      const skrg = new Date();
-      const jam = [skrg.getHours(), skrg.getMinutes(), skrg.getSeconds()].map(n => String(n).padStart(2, '0')).join(':');
-      const tgl = `${namaHari[skrg.getDay()]}, ${skrg.getDate()} ${namaBulan[skrg.getMonth()]} ${skrg.getFullYear()}`;
-      const elJam = document.getElementById('jamSistem');
-      const elTgl = document.getElementById('tglSistem');
-      if (elJam) elJam.textContent = jam;
-      if (elTgl) elTgl.textContent = tgl;
-    }
-    perbaruiWaktuSistem();
-    setInterval(perbaruiWaktuSistem, 1000);
-
-    function unlockAudioContext() {
-      try {
-        if (!audioCtx) {
-          const AudioContext = window.AudioContext || window.webkitAudioContext;
-          if (AudioContext) audioCtx = new AudioContext();
-        }
-        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-      } catch (e) {}
-    }
-    document.addEventListener('click', unlockAudioContext);
-    document.addEventListener('touchstart', unlockAudioContext);
-
-    function showToast(message, type = 'info') {
-      const container = document.getElementById('toastContainer');
-      if (!container) return;
-      const toast = document.createElement('div');
-      let borderClass = 'border-slate-700 bg-black text-white';
-      let icon = 'fa-circle-info text-cyan-400';
-      if (type === 'error') { borderClass = 'border-red-500 bg-black text-red-300'; icon = 'fa-circle-exclamation text-red-500'; }
-      else if (type === 'success') { borderClass = 'border-emerald-400 bg-black text-emerald-300'; icon = 'fa-circle-check text-emerald-400'; }
-      else if (type === 'warning') { borderClass = 'border-amber-400 bg-black text-amber-300'; icon = 'fa-triangle-exclamation text-amber-400'; }
-      toast.className = `pointer-events-auto p-3.5 px-4 rounded-xl border-2 ${borderClass} shadow-2xl flex items-center gap-3 text-xs font-bold animate-in slide-in-from-top-2 duration-200`;
-      toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i> <span>${message}</span>`;
-      container.appendChild(toast);
-      setTimeout(() => toast.remove(), 4000);
-    }
-
-    function playNotificationChime() {
-      if (!audioEnabled) return;
-      try {
-        unlockAudioContext();
-        if (!audioCtx) return;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.3);
-      } catch (e) {}
-    }
-
-    function picuSirene(platTarget) {
-      if (sireneAktif) return;
-      sireneAktif = true;
-      document.getElementById('bodyRoot').classList.add('siren-active');
-      const banner = document.getElementById('emergencyBanner');
-      const msg = document.getElementById('emergencyMsg');
-      if (msg) msg.textContent = `PERINGATAN TARGET KHUSUS TERDETEKSI: ${platTarget}`;
-      if (banner) banner.classList.remove('hidden');
-
-      catatAktivitas('DARURAT', `Sirine Peringatan Terpemicu untuk Plat Target: ${platTarget}`, 'danger');
-
-      if (audioEnabled) {
-        sireneInterval = setInterval(() => {
-          try {
-            unlockAudioContext();
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.4);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.4);
-          } catch(e) {}
-        }, 500);
-      }
-    }
-
-    function matikanSirene() {
-      sireneAktif = false;
-      if (sireneInterval) { clearInterval(sireneInterval); sireneInterval = null; }
-      document.getElementById('bodyRoot').classList.remove('siren-active');
-      const banner = document.getElementById('emergencyBanner');
-      if (banner) banner.classList.add('hidden');
-    }
-
-    function ucapkanText(teks) {
-      if (!voiceAnnounceEnabled || !('speechSynthesis' in window)) return;
-      try {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(teks);
-        utterance.lang = 'id-ID';
-        window.speechSynthesis.speak(utterance);
-      } catch(e) {}
-    }
-
-    function ujiNotifikasiDanSuara() {
-      showToast("🔔 DICOBA: Notifikasi Melayang Berhasil!", "success");
-      playNotificationChime();
-      ucapkanText("SERVER NORMAL DATA BARU READY");
-    }
-
-    function simpanCacheLokal(docs) {
-      try {
-        const minimalData = docs.slice(0, 300).map(doc => ({ id: doc.id, data: doc.data() }));
-        localStorage.setItem('cache_database_ip', JSON.stringify(minimalData));
-      } catch (e) {}
-    }
-
-    function muatCacheLokal() {
-      try {
-        const raw = localStorage.getItem('cache_database_ip');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            semuaData = parsed.map(item => ({
-              id: item.id,
-              data: () => item.data
-            }));
-            hitungStatistik();
-            tampil();
-          }
-        }
-      } catch (e) {}
-    }
-
-    function cekSesiOtomatis() {
-      if (localStorage.getItem('standby_mode') === 'true') {
-        document.getElementById('layarMasuk').classList.add('hidden');
-        document.getElementById('lap').classList.remove('hidden');
-        mulaiPantau();
-      }
-    }
-
-    function masuk() {
-      if (document.getElementById('kunci').value.trim() === KUNCI_AKSES) {
-        localStorage.setItem('standby_mode', 'true');
-        document.getElementById('layarMasuk').classList.add('hidden');
-        document.getElementById('lap').classList.remove('hidden');
-        catatAktivitas('LOGIN', 'Petugas Berhasil Masuk ke Pusat Kontrol', 'success');
-        mulaiPantau();
-      } else {
-        showToast('Kunci Akses (PIN) salah!', 'error');
-        catatAktivitas('LOGIN_GAGAL', 'Percobaan Akses PIN Salah', 'danger');
-      }
-    }
-
-    function keluarSistem() {
-      catatAktivitas('LOGOUT', 'Petugas Keluar / Standby Kunci Sistem', 'info');
-      localStorage.removeItem('standby_mode');
-      if (pengamat) pengamat();
-      document.getElementById('lap').classList.add('hidden');
-      document.getElementById('layarMasuk').classList.remove('hidden');
-    }
-
-    function toggleShowPin() {
-      const input = document.getElementById('kunci');
-      const icon = document.getElementById('iconShowPin');
-      input.type = input.type === 'password' ? 'text' : 'password';
-      if (icon) {
-        icon.className = input.type === 'password' ? 'fa-solid fa-eye text-sm' : 'fa-solid fa-eye-slash text-sm';
-      }
-    }
-
-    function toggleAudioAlert() { 
-      audioEnabled = !audioEnabled; 
-      const icon = document.getElementById('iconAudioSound');
-      if (icon) icon.className = audioEnabled ? 'fa-solid fa-bell text-lg text-emerald-400' : 'fa-solid fa-bell-slash text-lg text-slate-500';
-      showToast(audioEnabled ? 'Suara notifikasi aktif' : 'Suara notifikasi mati', 'info'); 
-    }
-
-    function toggleVoiceAnnounce() { 
-      voiceAnnounceEnabled = !voiceAnnounceEnabled; 
-      const icon = document.getElementById('iconVoiceAnnounce');
-      if (icon) icon.className = voiceAnnounceEnabled ? 'fa-solid fa-volume-high text-lg text-cyan-400' : 'fa-solid fa-volume-xmark text-lg text-slate-500';
-      showToast(voiceAnnounceEnabled ? 'Pengumuman suara TTS aktif' : 'Pengumuman suara TTS mati', 'info'); 
-    }
-
-    function toggleFullscreen() { 
-      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{}); 
-      else if (document.exitFullscreen) document.exitFullscreen().catch(()=>{}); 
-    }
-
-    function ambilNilai(data, daftarKunci) {
-      if (!data) return "-";
-      for (const k of daftarKunci) {
-        if (data[k] && String(data[k]).trim() !== '') return String(data[k]).trim().toUpperCase();
-      }
-      return "-";
-    }
-
-    function ambilPlat(d) { return ambilNilai(d, ['NopolServer','nopol','plat','NO_POL','NoPlat','plat_nomor','NOPOL','Nopol']); }
-    function ambilNoka(d) { return ambilNilai(d, ['Noka','no_rangka','rangka','NoRangka','NORANGKA']); }
-    function ambilNosin(d) { return ambilNilai(d, ['Nosin','no_mesin','mesin','NoMesin','NOMESIN']); }
-    function ambilWilayah(d) { return ambilNilai(d, ['wilayah','WILAYAH','area','AREA','SeriWilayah']); }
-    function ambilSeri(d) { return ambilNilai(d, ['seri','SERI','kode_seri','Seri']); }
-    function ambilLokasiGps(d) { return ambilNilai(d, ['LOKASI_GPS','lokasi_gps','lokasi','KOORDINAT']); }
-    function ambilMapsUrl(d) { return ambilNilai(d, ['MAPS_URL','maps_url','google_maps','link_maps']); }
-
-    function dapatkanGps() {
-      const inLokasi = document.getElementById('inLokasi');
-      const inMapsUrl = document.getElementById('inMapsUrl');
-      if (!navigator.geolocation) {
-        showToast('Browser / HP tidak mendukung Geolocation GPS', 'error');
-        return;
-      }
-      showToast('Sedang mengambil titik lokasi GPS...', 'info');
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude.toFixed(6);
-          const lng = pos.coords.longitude.toFixed(6);
-          const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
-          if (inLokasi) inLokasi.value = `${lat}, ${lng}`;
-          if (inMapsUrl) inMapsUrl.value = mapsUrl;
-          showToast('Titik lokasi GPS berhasil terkunci!', 'success');
-        },
-        (err) => {
-          showToast('Gagal mengambil GPS! Pastikan Izin GPS HP diaktifkan.', 'error');
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }
-
-    function parseTanggalData(d) {
-      if (!d || !d.waktu_ditemukan) return null;
-      let ts = d.waktu_ditemukan;
-      if (typeof ts === 'object' && ts !== null) {
-        if (typeof ts.seconds === 'number') return new Date(ts.seconds * 1000);
-        if (typeof ts.toDate === 'function') return ts.toDate();
-      }
-      if (typeof ts === 'number') return new Date(ts);
-      if (typeof ts === 'string') {
-        const parsed = new Date(ts);
-        if (!isNaN(parsed.getTime())) return parsed;
-      }
-      return null;
-    }
-
-    function formatWaktu(ts) {
-      if (!ts) return "-";
-      let d = null;
-      if (typeof ts === 'object' && ts !== null) {
-        if (typeof ts.seconds === 'number') d = new Date(ts.seconds * 1000);
-        else if (typeof ts.toDate === 'function') d = ts.toDate();
-      } else if (typeof ts === 'number') d = new Date(ts);
-      else if (typeof ts === 'string') d = new Date(ts);
-
-      if (!d || isNaN(d.getTime())) return "-";
-      return `<span class="text-white font-mono">${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} — ${namaHari[d.getDay()]}, ${d.getDate()} ${namaBulan[d.getMonth()]}</span>`;
-    }
-
-    function hitungStatistik() {
-      const skrg = new Date();
-      
-      const awalHari = new Date(skrg.getFullYear(), skrg.getMonth(), skrg.getDate(), 0, 0, 0, 0);
-      const hariKe = skrg.getDay(); 
-      const awalMinggu = new Date(skrg.getFullYear(), skrg.getMonth(), skrg.getDate() - hariKe, 0, 0, 0, 0);
-      const awalBulan = new Date(skrg.getFullYear(), skrg.getMonth(), 1, 0, 0, 0, 0);
-      const awalTahun = new Date(skrg.getFullYear(), 0, 1, 0, 0, 0, 0);
-
-      let hari = 0, minggu = 0, bulan = 0, tahun = 0;
-
-      semuaData.forEach(doc => {
-        const d = typeof doc.data === 'function' ? doc.data() : doc.data;
-        const tgl = parseTanggalData(d);
-
-        if (tgl) {
-          if (tgl >= awalHari) hari++;
-          if (tgl >= awalMinggu) minggu++;
-          if (tgl >= awalBulan) bulan++;
-          if (tgl >= awalTahun) tahun++;
-        }
-      });
-
-      const updateEl = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) {
-          const oldVal = el.textContent;
-          const newVal = val.toLocaleString('id-ID');
-          el.textContent = newVal;
-          if (oldVal !== newVal) {
-            el.parentElement.classList.remove('stat-updated');
-            void el.parentElement.offsetWidth;
-            el.parentElement.classList.add('stat-updated');
-          }
-        }
-      };
-
-      updateEl('jmlHari', hari);
-      updateEl('jmlMinggu', minggu);
-      updateEl('jmlBulan', bulan);
-      updateEl('jmlTahun', tahun);
-
-      perbaruiSemuaGrafik();
-    }
-
-    function mulaiPantau() {
-      if (pengamat) pengamat();
-      
-      muatCacheLokal();
-      
-      isInitialLoad = true;
-      
-      pengamat = db.collection('pencarian')
-        .orderBy('waktu_ditemukan', 'desc')
-        .onSnapshot({ includeMetadataChanges: true }, snap => {
-          if (!isInitialLoad) {
-            snap.docChanges().forEach(change => {
-              if (change.type === 'added') {
-                const d = change.doc.data();
-                const plat = ambilPlat(d);
-                showToast(`🔔 DATA BARU MASUK: ${plat}`, 'success');
-                playNotificationChime();
-                ucapkanText(`DATA BARU MASUK ${plat}`);
-
-                if (watchlistNopol.some(w => plat.includes(w))) {
-                  picuSirene(plat);
-                }
-              }
-            });
-          }
-
-          semuaData = snap.docs;
-          simpanCacheLokal(semuaData);
-          hitungStatistik();
-          if (isInitialLoad) isInitialLoad = false;
-          tampil();
-        }, error => {
-          console.error("Firestore error:", error);
-        });
-    }
-
-    function bersihkanPencarian() {
-      const el = document.getElementById('inCari');
-      if (el) {
-        el.value = '';
-        tampil();
-      }
-    }
-
-    function tampil() {
-      const elCari = document.getElementById('inCari');
-      const kataKunci = elCari ? elCari.value.trim().toLowerCase() : '';
-
-      if (kataKunci.length > 2) {
-        catatAktivitas('PENCARIAN', `Kata Kunci: "${kataKunci}"`, 'info');
-      }
-
-      let filtered = semuaData.filter(doc => {
-        if (!kataKunci) return true;
-        const d = typeof doc.data === 'function' ? doc.data() : doc.data;
-        const plat = ambilPlat(d).toLowerCase();
-        const noka = ambilNoka(d).toLowerCase();
-        const nosin = ambilNosin(d).toLowerCase();
-        const wilayah = ambilWilayah(d).toLowerCase();
-        const seri = ambilSeri(d).toLowerCase();
-        const nama = (d.NamaPemilik || d.nama_pemilik || '').toLowerCase();
-
-        return plat.includes(kataKunci) ||
-               noka.includes(kataKunci) ||
-               nosin.includes(kataKunci) ||
-               wilayah.includes(kataKunci) ||
-               seri.includes(kataKunci) ||
-               nama.includes(kataKunci);
-      });
-
-      const container = document.getElementById('daftarUtama');
-      if (!container) return;
-      
-      if (filtered.length === 0) {
-        container.innerHTML = `<div class="p-12 text-center text-slate-500 font-sans"><p class="font-bold text-sm text-slate-400">Tidak ada data ditemukan dalam database</p></div>`;
-        return;
-      }
-
-      container.innerHTML = filtered.map((doc, index) => {
-        const d = typeof doc.data === 'function' ? doc.data() : doc.data;
-        const wilayah = ambilWilayah(d);
-        const plat = ambilPlat(d);
-        const seri = ambilSeri(d);
-        const noka = ambilNoka(d);
-        const nosin = ambilNosin(d);
-        const waktuStr = formatWaktu(d.waktu_ditemukan);
-        const noUrut = index + 1;
-        const isWatchlist = watchlistNopol.some(w => plat.includes(w));
-
-        return `
-          <div onclick="bukaDetail('${doc.id}')" class="grid grid-cols-12 gap-1 p-3 px-4 items-center cursor-pointer transition border-b border-slate-800/80 hover:bg-slate-900/80 text-center font-mono text-xs ${isWatchlist ? 'bg-red-950/40 border-red-800/50' : ''}">
-            <div class="col-span-1 text-slate-400 font-bold">${noUrut}</div>
-            <div class="col-span-2 text-slate-200 font-bold break-all">${wilayah}</div>
-            <div class="col-span-2 text-emerald-400 font-black tracking-wider break-all ${isWatchlist ? 'text-red-400 animate-pulse' : ''}">${plat}</div>
-            <div class="col-span-1 text-fuchsia-300 font-bold break-all">${seri}</div>
-            <div class="col-span-2 text-amber-300 font-bold break-all">${noka}</div>
-            <div class="col-span-2 text-cyan-300 font-bold break-all">${nosin}</div>
-            <div class="col-span-2 text-white font-medium">${waktuStr}</div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function buatStrukturJsonLengkap(d) {
-      const seriWilayah = d.SeriWilayah || d.WILAYAH || d.wilayah || "B";
-      const nopol = d.Nopol || d.NOPOL || d.nopol || d.plat || "-";
-      const seri = d.Seri || d.SERI || d.seri || "-";
-      const noRangka = d.NoRangka || d.NOKA || d.noka || d.no_rangka || "-";
-      const noMesin = d.NoMesin || d.NOSIN || d.nosin || d.no_mesin || "-";
-
-      let tglUpdate = null;
-      if (d.waktu_ditemukan) {
-        const parsedTgl = parseTanggalData(d);
-        if (parsedTgl) {
-          tglUpdate = parsedTgl.toISOString().replace('T', ' ').replace('Z', '');
-        }
-      }
-
-      return {
-        "SeriWilayah": d.SeriWilayah !== undefined ? d.SeriWilayah : seriWilayah,
-        "Nopol": d.Nopol !== undefined ? d.Nopol : nopol,
-        "Seri": d.Seri !== undefined ? d.Seri : seri,
-        "NamaPemilik": d.NamaPemilik !== undefined ? d.NamaPemilik : (d.nama_pemilik || d.NAMA || null),
-        "AssetCode": d.AssetCode !== undefined ? d.AssetCode : (d.ASSET_CODE || null),
-        "NoKTP": d.NoKTP !== undefined ? d.NoKTP : (d.noktp || null),
-        "NoKK": d.NoKK !== undefined ? d.NoKK : null,
-        "NoHP": d.NoHP !== undefined ? d.NoHP : null,
-        "Email": d.Email !== undefined ? d.Email : null,
-        "Pekerjaan": d.Pekerjaan !== undefined ? d.Pekerjaan : (d.pekerjaan || null),
-        "Alamat": d.Alamat !== undefined ? d.Alamat : (d.alamat || d.ALAMAT || null),
-        "RT": d.RT !== undefined ? Number(d.RT) : 0,
-        "RW": d.RW !== undefined ? Number(d.RW) : 0,
-        "Merk": d.Merk !== undefined ? d.Merk : (d.merk || d.MERK || d.MEREK || null),
-        "Type": d.Type !== undefined ? d.Type : (d.type || d.TYPE || d.tipe || d.Tipe || null),
-        "TahunPembuatan": d.TahunPembuatan !== undefined ? (isNaN(Number(d.TahunPembuatan)) ? d.TahunPembuatan : Number(d.TahunPembuatan)) : (d.tahun ? Number(d.tahun) : null),
-        "IsiCylinder": d.IsiCylinder !== undefined ? String(d.IsiCylinder) : (d.cc ? String(d.cc) : null),
-        "NamaBBM": d.NamaBBM !== undefined ? d.NamaBBM : (d.bbm || null),
-        "Warna": d.Warna !== undefined ? d.Warna : (d.warna || null),
-        "NoRangka": d.NoRangka !== undefined ? d.NoRangka : noRangka,
-        "NoMesin": d.NoMesin !== undefined ? d.NoMesin : noMesin,
-        "JumlahSumbu": d.JumlahSumbu !== undefined ? Number(d.JumlahSumbu) : null,
-        "JumlahRoda": d.JumlahRoda !== undefined ? Number(d.JumlahRoda) : null,
-        "WarnaTNKB": d.WarnaTNKB !== undefined ? d.WarnaTNKB : null,
-        "JenisKendaraan": d.JenisKendaraan !== undefined ? d.JenisKendaraan : (d.jenis || d.JENIS || null),
-        "NamaModelKendaraan": d.NamaModelKendaraan !== undefined ? d.NamaModelKendaraan : (d.model || null),
-        "NoBPKB": d.NoBPKB !== undefined ? d.NoBPKB : (d.bpkb || null),
-        "NoSTNK": d.NoSTNK !== undefined ? d.NoSTNK : null,
-        "TanggalSTNK": d.TanggalSTNK !== undefined ? d.TanggalSTNK : null,
-        "TanggalDaftar": d.TanggalDaftar !== undefined ? d.TanggalDaftar : null,
-        "NoFaktur": d.NoFaktur !== undefined ? d.NoFaktur : null,
-        "TanggalFaktur": d.TanggalFaktur !== undefined ? d.TanggalFaktur : null,
-        "TanggalPengesahan": d.TanggalPengesahan !== undefined ? d.TanggalPengesahan : null,
-        "NamaPolda": d.NamaPolda !== undefined ? d.NamaPolda : null,
-        "SingkatanPolda": d.SingkatanPolda !== undefined ? d.SingkatanPolda : null,
-        "samsat": d.samsat || [],
-        "tambahan": d.tambahan || {
-          "TanggalUpdateTerakhir": tglUpdate,
-          "NoSRUT": d.NoSRUT || null
-        }
-      };
-    }
-
-    function highlightJsonSintaks(obj) {
-      let json = JSON.stringify(obj, null, 2);
-      json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-        let cls = 'text-amber-300';
-        if (/^"/.test(match)) {
-          if (/:$/.test(match)) {
-            cls = 'text-cyan-400 font-bold';
-          } else {
-            cls = 'text-emerald-300';
-          }
-        } else if (/true|false/.test(match)) {
-          cls = 'text-fuchsia-400 font-bold';
-        } else if (/null/.test(match)) {
-          cls = 'text-slate-500 italic';
-        }
-        return '<span class="' + cls + '">' + match + '</span>';
-      });
-    }
-
-    function bukaDetail(id) {
-      docIdTerpilih = id;
-      const doc = semuaData.find(d => d.id === id);
-      if (!doc) return;
-      const d = typeof doc.data === 'function' ? doc.data() : doc.data;
-      
-      const jsonStruktur = buatStrukturJsonLengkap(d);
-      
-      let html = `<div class="mb-3 p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
-        <div>
-          <div class="text-[10px] text-slate-400 font-bold">ID DOKUMEN FIRESTORE:</div>
-          <div class="text-xs text-red-400 font-mono select-all">${id}</div>
+        <!-- Selected File List Box -->
+        <div id="fileListBox" class="hidden bg-[#0d1117] border border-[#30363d] rounded-xl p-3 text-xs space-y-2">
+            <strong class="text-white flex items-center gap-2">📂 File Terpilih:</strong>
+            <div id="fileListContent" class="space-y-1 divide-y divide-[#21262d]"></div>
         </div>
-        <button onclick="salinJsonMentah()" class="px-2.5 py-1 bg-cyan-950 border border-cyan-500/50 text-cyan-300 rounded-lg text-[11px] font-bold hover:bg-cyan-900 transition">
-          <i class="fa-solid fa-copy mr-1"></i>SALIN JSON
-        </button>
-      </div>`;
-      
-      const mapsUrl = ambilMapsUrl(d);
-      if (mapsUrl && mapsUrl !== '-') {
-        html += `
-          <div class="mb-3 p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/60 flex items-center justify-between">
-            <div class="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-              <i class="fa-solid fa-map-location-dot text-emerald-400 text-sm"></i>
-              <span>TITIK LOKASI PENEMUAN</span>
+
+        <!-- Progress Loading State -->
+        <div id="progressCard" class="hidden bg-[#161b22] border border-[#30363d] rounded-xl p-5 text-center space-y-3">
+            <div class="w-8 h-8 border-3 border-gray-600 border-t-red-600 rounded-full animate-spin mx-auto"></div>
+            <p id="loadingStatusText" class="text-sm font-semibold text-white">Memproses file...</p>
+            <div class="w-full bg-[#21262d] h-2.5 rounded-full overflow-hidden border border-[#30363d]">
+                <div id="progressBarFill" class="bg-gradient-to-r from-red-600 to-red-400 h-full w-0 transition-all duration-200"></div>
             </div>
-            <a href="${mapsUrl}" target="_blank" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 transition active:scale-95 shadow-md">
-              <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-              <span>BUKA PETA</span>
-            </a>
-          </div>
-        `;
-      }
-
-      const jsonFormatted = highlightJsonSintaks(jsonStruktur);
-
-      html += `
-        <div class="bg-black border-2 border-slate-800 rounded-xl p-3.5 overflow-x-auto">
-          <pre class="font-mono text-xs leading-relaxed whitespace-pre select-all">${jsonFormatted}</pre>
         </div>
-      `;
 
-      document.getElementById('modalIsi').innerHTML = html;
-      document.getElementById('modalLatar').classList.remove('hidden');
-    }
+        <!-- Notification Banner -->
+        <div id="statusMsgBox" class="hidden p-4 rounded-xl text-xs font-medium leading-relaxed shadow-lg"></div>
 
-    function salinJsonMentah() {
-      if (!docIdTerpilih) return;
-      const doc = semuaData.find(d => d.id === docIdTerpilih);
-      if (!doc) return;
-      const d = typeof doc.data === 'function' ? doc.data() : doc.data;
-      const jsonStruktur = buatStrukturJsonLengkap(d);
-      const teksJson = JSON.stringify(jsonStruktur, null, 2);
-      
-      const ta = document.createElement('textarea');
-      ta.value = teksJson;
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand('copy');
-        showToast('Teks JSON disalin ke clipboard!', 'success');
-      } catch(e) {
-        showToast('Gagal menyalin JSON', 'error');
-      }
-      document.body.removeChild(ta);
-    }
+        <!-- Stats Summary Card -->
+        <div id="statsCard" class="hidden bg-[#161b22] border border-[#30363d] rounded-xl p-4 space-y-3">
+            <h3 class="text-xs font-bold text-gray-300 uppercase tracking-wider">📊 Ringkasan Hasil Impor Firestore</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                <div class="bg-[#0d1117] border border-[#30363d] p-3 rounded-lg border-t-2 border-t-red-500">
+                    <div id="statFiles" class="text-lg font-black text-white">0</div>
+                    <div class="text-[10px] text-gray-400 font-semibold uppercase mt-0.5">File Diolah</div>
+                </div>
+                <div class="bg-[#0d1117] border border-[#30363d] p-3 rounded-lg border-t-2 border-t-blue-500">
+                    <div id="statRecords" class="text-lg font-black text-blue-400">0</div>
+                    <div class="text-[10px] text-gray-400 font-semibold uppercase mt-0.5">Kendaraan Valid</div>
+                </div>
+                <div class="bg-[#0d1117] border border-[#30363d] p-3 rounded-lg border-t-2 border-t-emerald-500">
+                    <div id="statFirestoreDocs" class="text-lg font-black text-emerald-400">0</div>
+                    <div class="text-[10px] text-gray-400 font-semibold uppercase mt-0.5">Dokumen Firestore ('pencarian')</div>
+                </div>
+                <div class="bg-[#0d1117] border border-[#30363d] p-3 rounded-lg border-t-2 border-t-amber-500">
+                    <div id="statTotalFirestore" class="text-lg font-black text-amber-400">0</div>
+                    <div class="text-[10px] text-gray-400 font-semibold uppercase mt-0.5">Total Cloud Firestore</div>
+                </div>
+            </div>
+            <div class="flex gap-2 pt-1">
+                <button onclick="unduhJSON()" class="flex-1 bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-gray-200 text-xs py-2 rounded-lg font-semibold transition">
+                    📥 Unduh Hasil JSON
+                </button>
+                <button onclick="salinJSON()" class="flex-1 bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-gray-200 text-xs py-2 rounded-lg font-semibold transition">
+                    📋 Salin Text JSON
+                </button>
+            </div>
+        </div>
 
-    function salinFormatLaporan() {
-      salinJsonMentah();
-    }
+        <!-- Live Preview Table Card -->
+        <div id="tablePreviewCard" class="hidden bg-[#161b22] border border-[#30363d] rounded-xl p-4 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h3 class="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                    👁️ Preview Field Standar Target (<span id="txtTableRecordCount" class="text-red-400">0</span> Kendaraan)
+                </h3>
+                <input type="text" id="inputTableSearch" onkeyup="cariTableData()" placeholder="🔍 Cari Plat / Noka / Nosin / Nama / BPKB..." 
+                       class="bg-[#0d1117] border border-[#30363d] text-white text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-red-500 w-full sm:w-64">
+            </div>
 
-    function tutupDetail() { document.getElementById('modalLatar').classList.add('hidden'); docIdTerpilih = null; }
-    function bukaModalInput() { document.getElementById('modalInput').classList.remove('hidden'); }
-    function tutupModalInput() { document.getElementById('modalInput').classList.add('hidden'); }
+            <div class="overflow-x-auto border border-[#30363d] rounded-lg max-h-96">
+                <table class="w-full text-left text-[11px] text-gray-300 whitespace-nowrap">
+                    <thead class="bg-[#21262d] text-white font-bold border-b border-[#30363d]">
+                        <tr>
+                            <th class="p-2.5">#</th>
+                            <th class="p-2.5">NO.PLAT (`NO.PLAT`)</th>
+                            <th class="p-2.5">MEREK</th>
+                            <th class="p-2.5">TYPE</th>
+                            <th class="p-2.5">TAHUN</th>
+                            <th class="p-2.5">WARNA</th>
+                            <th class="p-2.5">CYLINDER</th>
+                            <th class="p-2.5">NAMA BBM</th>
+                            <th class="p-2.5">NOKA</th>
+                            <th class="p-2.5">NOSIN</th>
+                            <th class="p-2.5">NO. BPKB</th>
+                            <th class="p-2.5">NO. STNK</th>
+                            <th class="p-2.5">NAMA</th>
+                            <th class="p-2.5">NIK</th>
+                            <th class="p-2.5">MSSDN</th>
+                            <th class="p-2.5">PEKERJAAN</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewTableBody" class="divide-y divide-[#21262d]">
+                        <!-- Dynamic rows -->
+                    </tbody>
+                </table>
+            </div>
 
-    function simpanDataBaru() {
-      const nopol = document.getElementById('inNopol').value.trim().toUpperCase();
-      const noka = document.getElementById('inNoka').value.trim().toUpperCase();
-      const nosin = document.getElementById('inNosin').value.trim().toUpperCase();
-      const wilayah = document.getElementById('inWilayah').value.trim().toUpperCase();
-      const seri = document.getElementById('inSeri').value.trim().toUpperCase();
-      const lokasi = document.getElementById('inLokasi') ? document.getElementById('inLokasi').value.trim() : '';
-      const mapsUrl = document.getElementById('inMapsUrl') ? document.getElementById('inMapsUrl').value.trim() : '';
-      
-      if (!nopol) { showToast('Nopol wajib diisi!', 'error'); return; }
+            <div class="flex items-center justify-between text-xs text-gray-400 pt-1">
+                <span id="txtPageIndicator">Halaman 1 dari 1</span>
+                <div class="flex gap-1">
+                    <button id="btnPagePrev" onclick="gantiHalamanTable(-1)" class="bg-[#21262d] hover:bg-[#30363d] px-3 py-1 rounded text-white font-semibold disabled:opacity-40 disabled:cursor-not-allowed">◀ Prev</button>
+                    <button id="btnPageNext" onclick="gantiHalamanTable(1)" class="bg-[#21262d] hover:bg-[#30363d] px-3 py-1 rounded text-white font-semibold disabled:opacity-40 disabled:cursor-not-allowed">Next ▶</button>
+                </div>
+            </div>
+        </div>
 
-      const dataBaru = {
-        NOPOL: nopol,
-        NOKA: noka || '-',
-        NOSIN: nosin || '-',
-        WILAYAH: wilayah || '-',
-        SERI: seri || '-',
-        LOKASI_GPS: lokasi || '-',
-        MAPS_URL: mapsUrl || '-',
-        waktu_ditemukan: firebase.firestore.FieldValue.serverTimestamp()
-      };
+    </div>
 
-      const mockDoc = {
-        id: 'temp_' + Date.now(),
-        data: () => ({ ...dataBaru, waktu_ditemukan: new Date() })
-      };
-      semuaData.unshift(mockDoc);
-      hitungStatistik();
-      tampil();
+    <!-- Toast Notification -->
+    <div id="toastBox" class="fixed bottom-5 right-5 bg-red-600 text-white font-bold text-xs px-4 py-3 rounded-lg shadow-2xl hidden z-50 transition-all"></div>
 
-      db.collection('pencarian').add(dataBaru)
-        .then(() => { 
-          showToast('Data berhasil disimpan!', 'success'); 
-          catatAktivitas('INPUT', `Data Baru Diinput: ${nopol} (${wilayah})`, 'success');
-          tutupModalInput();
-          document.getElementById('inNopol').value = '';
-          document.getElementById('inNoka').value = '';
-          document.getElementById('inNosin').value = '';
-          document.getElementById('inWilayah').value = '';
-          document.getElementById('inSeri').value = '';
-          if (document.getElementById('inLokasi')) document.getElementById('inLokasi').value = '';
-          if (document.getElementById('inMapsUrl')) document.getElementById('inMapsUrl').value = '';
-        })
-        .catch(err => {
-          showToast('Gagal menyimpan ke server!', 'error');
-        });
-    }
-
-    function gantiTabDashboard(tab) {
-      const btnTabel = document.getElementById('tabBtnTabel');
-      const btnAnalytics = document.getElementById('tabBtnAnalytics');
-      const panelTabel = document.getElementById('panelTabelView');
-      const panelAnalytics = document.getElementById('panelAnalytics');
-
-      if (tab === 'tabel') {
-        btnTabel.className = 'py-2 px-4 rounded-xl font-black text-xs flex items-center gap-2 bg-red-600 text-white shadow-lg transition';
-        btnAnalytics.className = 'py-2 px-4 rounded-xl font-bold text-xs flex items-center gap-2 bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition';
-        panelTabel.classList.remove('hidden');
-        panelAnalytics.classList.add('hidden');
-      } else {
-        btnAnalytics.className = 'py-2 px-4 rounded-xl font-black text-xs flex items-center gap-2 bg-cyan-600 text-white shadow-lg transition';
-        btnTabel.className = 'py-2 px-4 rounded-xl font-bold text-xs flex items-center gap-2 bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition';
-        panelTabel.classList.add('hidden');
-        panelAnalytics.classList.remove('hidden');
-        perbaruiSemuaGrafik();
-      }
-    }
-
-    function perbaruiSemuaGrafik() {
-      if (document.getElementById('panelAnalytics').classList.contains('hidden')) return;
-
-      const countsByDate = {};
-      const dateLabels = [];
-      for (let i = 29; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        const dateStr = `${d.getDate()}/${d.getMonth()+1}`;
-        dateLabels.push(dateStr);
-        countsByDate[dateStr] = 0;
-      }
-
-      const wilayahCount = {};
-      const seriCount = {};
-
-      semuaData.forEach(doc => {
-        const d = typeof doc.data === 'function' ? doc.data() : doc.data;
-        const tgl = parseTanggalData(d);
-        if (tgl) {
-          const dateStr = `${tgl.getDate()}/${tgl.getMonth()+1}`;
-          if (countsByDate[dateStr] !== undefined) countsByDate[dateStr]++;
-        }
-
-        const w = ambilWilayah(d);
-        if (w !== '-') wilayahCount[w] = (wilayahCount[w] || 0) + 1;
-
-        const s = ambilSeri(d);
-        if (s !== '-') seriCount[s] = (seriCount[s] || 0) + 1;
-      });
-
-      const ctxTren = document.getElementById('chartTrenCanvas')?.getContext('2d');
-      if (ctxTren) {
-        if (chartTren) chartTren.destroy();
-        chartTren = new Chart(ctxTren, {
-          type: 'line',
-          data: {
-            labels: dateLabels,
-            datasets: [{
-              label: 'Temuan Kendaraan',
-              data: dateLabels.map(l => countsByDate[l]),
-              borderColor: '#22d3ee',
-              backgroundColor: 'rgba(34, 211, 238, 0.15)',
-              fill: true,
-              tension: 0.4,
-              borderWidth: 2,
-              pointBackgroundColor: '#ff2233'
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } },
-              y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' }, beginAtZero: true }
-            }
-          }
-        });
-      }
-
-      const ctxWilayah = document.getElementById('chartWilayahCanvas')?.getContext('2d');
-      if (ctxWilayah) {
-        const sortedWilayah = Object.entries(wilayahCount).sort((a,b) => b[1] - a[1]).slice(0, 5);
-        if (chartWilayah) chartWilayah.destroy();
-        chartWilayah = new Chart(ctxWilayah, {
-          type: 'doughnut',
-          data: {
-            labels: sortedWilayah.map(w => w[0]),
-            datasets: [{
-              data: sortedWilayah.map(w => w[1]),
-              backgroundColor: ['#ff2233', '#34d399', '#fbbf24', '#22d3ee', '#e879f9'],
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'bottom', labels: { color: '#f8fafc', font: { size: 10 } } }
-            }
-          }
-        });
-      }
-
-      const ctxSeri = document.getElementById('chartSeriCanvas')?.getContext('2d');
-      if (ctxSeri) {
-        const sortedSeri = Object.entries(seriCount).sort((a,b) => b[1] - a[1]).slice(0, 8);
-        if (chartSeri) chartSeri.destroy();
-        chartSeri = new Chart(ctxSeri, {
-          type: 'bar',
-          data: {
-            labels: sortedSeri.map(s => s[0]),
-            datasets: [{
-              label: 'Jumlah Seri',
-              data: sortedSeri.map(s => s[1]),
-              backgroundColor: '#34d399',
-              borderRadius: 6
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
-              y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' }, beginAtZero: true }
-            }
-          }
-        });
-      }
-    }
-
-    function bukaModalEkspor() { document.getElementById('modalEkspor').classList.remove('hidden'); }
-    function tutupModalEkspor() { document.getElementById('modalEkspor').classList.add('hidden'); }
-    function bukaModalImpor() { document.getElementById('modalImpor').classList.remove('hidden'); }
-    function tutupModalImpor() { document.getElementById('modalImpor').classList.add('hidden'); }
-
-    function DapatkanExportArray() {
-      return semuaData.map((doc, idx) => {
-        const d = typeof doc.data === 'function' ? doc.data() : doc.data;
-        const tgl = parseTanggalData(d);
-        const jsonLengkap = buatStrukturJsonLengkap(d);
-
-        const row = {
-          "NO": idx + 1,
-          "ID_FIRESTORE": doc.id,
-          "WAKTU_PENEMUAN": tgl ? tgl.toLocaleString('id-ID') : '-',
-          "WILAYAH": ambilWilayah(d),
-          "NOPOL": ambilPlat(d),
-          "SERI": ambilSeri(d),
-          "NOKA": ambilNoka(d),
-          "NOSIN": ambilNosin(d),
-          "NAMA_PEMILIK": jsonLengkap.NamaPemilik || '-',
-          "ASSET_CODE": jsonLengkap.AssetCode || '-',
-          "NO_KTP": jsonLengkap.NoKTP || '-',
-          "NO_KK": jsonLengkap.NoKK || '-',
-          "NO_HP": jsonLengkap.NoHP || '-',
-          "EMAIL": jsonLengkap.Email || '-',
-          "PEKERJAAN": jsonLengkap.Pekerjaan || '-',
-          "ALAMAT": jsonLengkap.Alamat || '-',
-          "RT": jsonLengkap.RT || 0,
-          "RW": jsonLengkap.RW || 0,
-          "MERK": jsonLengkap.Merk || '-',
-          "TYPE": jsonLengkap.Type || '-',
-          "TAHUN": jsonLengkap.TahunPembuatan || '-',
-          "CC": jsonLengkap.IsiCylinder || '-',
-          "BBM": jsonLengkap.NamaBBM || '-',
-          "WARNA": jsonLengkap.Warna || '-',
-          "WARNA_TNKB": jsonLengkap.WarnaTNKB || '-',
-          "JENIS_KENDARAAN": jsonLengkap.JenisKendaraan || '-',
-          "MODEL_KENDARAAN": jsonLengkap.NamaModelKendaraan || '-',
-          "SUMBU": jsonLengkap.JumlahSumbu || '-',
-          "RODA": jsonLengkap.JumlahRoda || '-',
-          "NO_BPKB": jsonLengkap.NoBPKB || '-',
-          "NO_STNK": jsonLengkap.NoSTNK || '-',
-          "TGL_STNK": jsonLengkap.TanggalSTNK || '-',
-          "TGL_DAFTAR": jsonLengkap.TanggalDaftar || '-',
-          "NO_FAKTUR": jsonLengkap.NoFaktur || '-',
-          "TGL_FAKTUR": jsonLengkap.TanggalFaktur || '-',
-          "TGL_PENGESAHAN": jsonLengkap.TanggalPengesahan || '-',
-          "POLDA": jsonLengkap.NamaPolda || '-',
-          "LOKASI_GPS": ambilLokasiGps(d),
-          "MAPS_URL": ambilMapsUrl(d)
+    <script class="notranslate">
+        // Global Error Console Tracking
+        let logCounter = 0;
+        window.onerror = function(msg, url, lineNo) {
+            logDiag(`❌ RUNTIME ERROR: ${msg} (Baris: ${lineNo})`, 'err');
+            return false;
         };
 
-        Object.keys(d).forEach(k => {
-          if (k === 'waktu_ditemukan') return;
-          if (!(k in row)) {
-            let val = d[k];
-            if (typeof val === 'object' && val !== null) {
-              val = JSON.stringify(val);
+        function logDiag(pesan, type = 'info') {
+            console.log(pesan);
+            logCounter++;
+            const consoleEl = document.getElementById('debugConsole');
+            const logCountEl = document.getElementById('txtLogCount');
+            if (logCountEl) logCountEl.textContent = `${logCounter} Event`;
+            
+            if (consoleEl) {
+                const time = new Date().toLocaleTimeString();
+                const div = document.createElement('div');
+                div.className = `log-${type}`;
+                div.textContent = `[${time}] ${pesan}`;
+                consoleEl.appendChild(div);
+                consoleEl.scrollTop = consoleEl.scrollHeight;
             }
-            row[k] = val !== undefined && val !== null ? val : '-';
-          }
-        });
+        }
 
-        return row;
-      });
-    }
+        function showToast(msg) {
+            const toast = document.getElementById('toastBox');
+            toast.textContent = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
 
-    function eksporExcel() {
-      const dataArr = DapatkanExportArray();
-      if (dataArr.length === 0) { showToast('Database kosong!', 'error'); return; }
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBonuHp4nd-YZKwV5IM_2HRCfJ2TQ4zJaY",
+            authDomain: "gen-lang-client-0221970857.firebaseapp.com",
+            databaseURL: "https://gen-lang-client-0221970857-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "gen-lang-client-0221970857",
+            storageBucket: "gen-lang-client-0221970857.firebasestorage.app",
+            messagingSenderId: "483674298302",
+            appId: "1:483674298302:web:8c6ccf111af4de7bbecbef"
+        };
 
-      const ws = XLSX.utils.json_to_sheet(dataArr);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Database Vehicle");
-      
-      const fileName = `Database_PusatKontrol_${new Date().toISOString().slice(0,10)}.xlsx`;
-      XLSX.writeFile(wb, fileName);
-      
-      catatAktivitas('EKSPOR', `Ekspor Excel ${dataArr.length} Data Lengkap (${fileName})`, 'success');
-      showToast('File Excel Berhasil Diunduh dengan Atribut Lengkap!', 'success');
-      tutupModalEkspor();
-    }
+        let dbRealtime = null;
+        let dbFirestore = null;
 
-    function eksporCSV() {
-      const dataArr = DapatkanExportArray();
-      if (dataArr.length === 0) { showToast('Database kosong!', 'error'); return; }
+        // Global Data State
+        let globalProcessedData = [];
+        let globalFilteredTableData = [];
+        let currentTablePage = 1;
+        const rowsPerPage = 15;
 
-      const ws = XLSX.utils.json_to_sheet(dataArr);
-      const csv = XLSX.utils.sheet_to_csv(ws);
-      
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", `Database_PusatKontrol_${new Date().toISOString().slice(0,10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+        window.addEventListener('DOMContentLoaded', () => {
+            logDiag("Menginisialisasi Firebase SDK...");
 
-      catatAktivitas('EKSPOR', `Ekspor CSV ${dataArr.length} Data Lengkap`, 'success');
-      showToast('File CSV Berhasil Diunduh dengan Atribut Lengkap!', 'success');
-      tutupModalEkspor();
-    }
+            if (typeof firebase === 'undefined') {
+                logDiag("❌ Gagal memuat SDK Firebase dari CDN!", 'err');
+            } else {
+                try {
+                    firebase.initializeApp(firebaseConfig);
+                    dbRealtime = firebase.database();
+                    dbFirestore = firebase.firestore();
+                    
+                    logDiag("✅ Firebase Inisialisasi Sukses!", 'success');
+                    logDiag("🔥 Cloud Firestore Collection: 'pencarian' SIAP!", 'success');
+                    logDiag("⚡ Realtime Database: 'data_kendaraan' SIAP!", 'success');
 
-    function siapkanTampilanCetak() {
-      const printBox = document.getElementById('printReportArea');
-      if (!printBox) return;
-
-      const dataArr = semuaData;
-      const tglCetak = new Date().toLocaleString('id-ID');
-
-      let tableRows = dataArr.map((doc, idx) => {
-        const d = typeof doc.data === 'function' ? doc.data() : doc.data;
-        const jsonLengkap = buatStrukturJsonLengkap(d);
-        const tgl = parseTanggalData(d);
-        return `
-          <tr>
-            <td style="border: 1px solid #000; padding: 4px; text-align: center;">${idx + 1}</td>
-            <td style="border: 1px solid #000; padding: 4px;"><b>${ambilPlat(d)}</b></td>
-            <td style="border: 1px solid #000; padding: 4px;">${ambilWilayah(d)} / ${ambilSeri(d)}</td>
-            <td style="border: 1px solid #000; padding: 4px;">${ambilNoka(d)}</td>
-            <td style="border: 1px solid #000; padding: 4px;">${ambilNosin(d)}</td>
-            <td style="border: 1px solid #000; padding: 4px;">${jsonLengkap.NamaPemilik || '-'}</td>
-            <td style="border: 1px solid #000; padding: 4px;">${jsonLengkap.Merk || '-'} ${jsonLengkap.Type || ''} (${jsonLengkap.Warna || '-'})</td>
-            <td style="border: 1px solid #000; padding: 4px;">${ambilLokasiGps(d)}</td>
-            <td style="border: 1px solid #000; padding: 4px;">${tgl ? tgl.toLocaleString('id-ID') : '-'}</td>
-          </tr>
-        `;
-      }).join('');
-
-      printBox.innerHTML = `
-        <div style="font-family: Arial, sans-serif; padding: 10px; color: #000; background: #fff;">
-          <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px;">
-            <h2 style="margin: 0; font-size: 18px; font-weight: bold;">PUSAT KONTROL DATABASE REAL-TIME</h2>
-            <p style="margin: 4px 0 0 0; font-size: 12px;">LAPORAN RESMI REKAPITULASI DATA VEHICLE / KENDARAAN</p>
-            <p style="margin: 2px 0 0 0; font-size: 10px; color: #555;">Dicetak Pada: ${tglCetak} | Total Data: ${dataArr.length} Record</p>
-          </div>
-
-          <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-            <thead>
-              <tr style="background-color: #f0f0f0;">
-                <th style="border: 1px solid #000; padding: 5px;">NO</th>
-                <th style="border: 1px solid #000; padding: 5px;">NOPOL</th>
-                <th style="border: 1px solid #000; padding: 5px;">WIL/SERI</th>
-                <th style="border: 1px solid #000; padding: 5px;">NOKA</th>
-                <th style="border: 1px solid #000; padding: 5px;">NOSIN</th>
-                <th style="border: 1px solid #000; padding: 5px;">PEMILIK</th>
-                <th style="border: 1px solid #000; padding: 5px;">MERK/TIPE/WARNA</th>
-                <th style="border: 1px solid #000; padding: 5px;">LOKASI GPS</th>
-                <th style="border: 1px solid #000; padding: 5px;">WAKTU PENEMUAN</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${tableRows}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
-
-    function cetakLaporanPdf() {
-      if (semuaData.length === 0) {
-        showToast('Database kosong, tidak ada data untuk dicetak!', 'error');
-        return;
-      }
-      siapkanTampilanCetak();
-      catatAktivitas('CETAK', `Cetak Laporan PDF (${semuaData.length} Data)`, 'info');
-      tutupModalEkspor();
-      setTimeout(() => {
-        window.print();
-      }, 200);
-    }
-
-    // SYSTEM PEMETAAN & DEDUPLIKASI IMPOR FILE MASSAL (EXCEL / CSV / PDF)
-    function normalisasiString(str) {
-      return String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    }
-
-    function petakanKolomOtomatis(rawRow) {
-      const result = { ...rawRow };
-      const rawKeys = Object.keys(rawRow);
-
-      rawKeys.forEach(rawKey => {
-        const normKey = normalisasiString(rawKey);
-        const val = rawRow[rawKey];
-        if (val === undefined || val === null) return;
-        const strVal = String(val).trim();
-
-        for (const [targetKey, aliases] of Object.entries(COLUMN_ALIASES)) {
-          if (aliases.some(alias => normalisasiString(alias) === normKey)) {
-            if (!result[targetKey] || result[targetKey] === '-' || result[targetKey] === '') {
-              result[targetKey] = strVal;
+                    document.getElementById('firestoreStatusDot').className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+                    cekTotalDatabaseCloud();
+                } catch (err) {
+                    logDiag("❌ Inisialisasi Firebase Error: " + err.message, 'err');
+                }
             }
-          }
-        }
-      });
 
-      return {
-        NOPOL: (result.NOPOL || result.nopol || result.plat || result.PLATNOMOR || '-').toUpperCase(),
-        NOKA: (result.NOKA || result.noka || result.no_rangka || '-').toUpperCase(),
-        NOSIN: (result.NOSIN || result.nosin || result.no_mesin || '-').toUpperCase(),
-        WILAYAH: (result.WILAYAH || result.wilayah || result.area || 'B').toUpperCase(),
-        SERI: (result.SERI || result.seri || '-').toUpperCase(),
-        NamaPemilik: result.NamaPemilik || result.NAMA || result.nama || result.CostumerName || result.CUSTOMER_NAME || '-',
-        Merk: result.Merk || result.MERK || result.merk || result.MEREK || '-',
-        Type: result.Type || result.TYPE || result.type || result.Tipe || '-',
-        JenisKendaraan: result.JenisKendaraan || result.JENIS || result.jenis || '-',
-        TahunPembuatan: result.TahunPembuatan || result.TAHUN || result.tahun || '-',
-        Alamat: result.Alamat || result.ALAMAT || result.alamat || '-',
-        AssetCode: result.AssetCode || result.ASSET_CODE || result.asset_code || '-',
-        ...result,
-        waktu_ditemukan: firebase.firestore.FieldValue.serverTimestamp()
-      };
-    }
-
-    function hitungKelengkapanData(item) {
-      let score = 0;
-      const invalidValues = ['', '-', 'NULL', 'null', 'UNDEFINED', 'undefined', '0', '0000', 'NONE', 'none'];
-      
-      Object.keys(item).forEach(key => {
-        if (key === 'waktu_ditemukan' || key === 'id') return;
-        const val = item[key];
-        if (val !== null && val !== undefined) {
-          const sVal = String(val).trim();
-          if (sVal !== '' && !invalidValues.includes(sVal)) {
-            score++;
-          }
-        }
-      });
-      return score;
-    }
-
-    function gabungkanDataDuplikat(itemUtama, itemTambahan) {
-      const merged = { ...itemTambahan, ...itemUtama };
-      const invalidValues = ['', '-', 'NULL', 'null', 'UNDEFINED', 'undefined', '0', 'NONE'];
-      
-      Object.keys(itemTambahan).forEach(k => {
-        const valUtama = merged[k];
-        const valTambahan = itemTambahan[k];
-        
-        const isUtamaKosong = !valUtama || invalidValues.includes(String(valUtama).trim());
-        const isTambahanAda = valTambahan && !invalidValues.includes(String(valTambahan).trim());
-        
-        if (isUtamaKosong && isTambahanAda) {
-          merged[k] = valTambahan;
-        }
-      });
-      
-      return merged;
-    }
-
-    function prosesDeduplikasiData(dataList) {
-      const mapGroup = new Map();
-      let totalRaw = dataList.length;
-      let totalGanda = 0;
-
-      dataList.forEach(item => {
-        const cleanNopol = String(item.NOPOL || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
-        const cleanNoka = String(item.NOKA || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
-        const cleanNosin = String(item.NOSIN || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
-
-        let key = '';
-        if (cleanNopol && cleanNopol !== '-' && cleanNopol.length >= 3) key = 'NOPOL_' + cleanNopol;
-        else if (cleanNoka && cleanNoka !== '-' && cleanNoka.length >= 5) key = 'NOKA_' + cleanNoka;
-        else if (cleanNosin && cleanNosin !== '-' && cleanNosin.length >= 5) key = 'NOSIN_' + cleanNosin;
-        else key = 'UNIQUE_' + Math.random().toString(36).substring(2, 9);
-
-        if (!mapGroup.has(key)) {
-          mapGroup.set(key, [item]);
-        } else {
-          mapGroup.get(key).push(item);
-          totalGanda++;
-        }
-      });
-
-      const hasilDeduplikasi = [];
-
-      mapGroup.forEach((groupItems) => {
-        if (groupItems.length === 1) {
-          hasilDeduplikasi.push(groupItems[0]);
-        } else {
-          groupItems.sort((a, b) => hitungKelengkapanData(b) - hitungKelengkapanData(a));
-          
-          let mergedBest = groupItems[0];
-          for (let i = 1; i < groupItems.length; i++) {
-            mergedBest = gabungkanDataDuplikat(mergedBest, groupItems[i]);
-          }
-          hasilDeduplikasi.push(mergedBest);
-        }
-      });
-
-      return {
-        hasil: hasilDeduplikasi,
-        totalRaw: totalRaw,
-        totalGanda: totalGanda
-      };
-    }
-
-    async function bacaFilePdf(file) {
-      if (typeof pdfjsLib === 'undefined') {
-        throw new Error("Pustaka PDF.js belum siap");
-      }
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      let fullTextLines = [];
-
-      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        const page = await pdf.getPage(pageNum);
-        const textContent = await page.getTextContent();
-        
-        const items = textContent.items;
-        const linesMap = new Map();
-
-        items.forEach(item => {
-          if (!item.str || !item.str.trim()) return;
-          const y = Math.round(item.transform[5] / 4) * 4;
-          if (!linesMap.has(y)) {
-            linesMap.set(y, []);
-          }
-          linesMap.get(y).push({ x: item.transform[4], str: item.str });
+            setupDropzone();
         });
 
-        const sortedY = Array.from(linesMap.keys()).sort((a, b) => b - a);
-        
-        sortedY.forEach(y => {
-          const lineItems = linesMap.get(y);
-          lineItems.sort((a, b) => a.x - b.x);
-          const lineText = lineItems.map(i => i.str).join("   ");
-          fullTextLines.push(lineText);
-        });
-      }
+        function setupDropzone() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
 
-      return parsePdfLinesKeObjek(fullTextLines);
-    }
-
-    function parsePdfLinesKeObjek(lines) {
-      const rows = [];
-      let headers = null;
-
-      lines.forEach(line => {
-        const trimmed = line.trim();
-        if (!trimmed) return;
-
-        const parts = trimmed.split(/\s{2,}|\t/).map(p => p.trim()).filter(Boolean);
-
-        if (!headers) {
-          const lowerLine = trimmed.toLowerCase();
-          if (lowerLine.includes('nopol') || lowerLine.includes('plat') || lowerLine.includes('noka') || lowerLine.includes('nosin') || lowerLine.includes('nama') || lowerLine.includes('merk')) {
-            headers = parts;
-            return;
-          }
-        }
-
-        if (headers && parts.length > 1) {
-          const rowObj = {};
-          parts.forEach((val, idx) => {
-            const keyName = headers[idx] || `KOLOM_${idx+1}`;
-            rowObj[keyName] = val;
-          });
-          rows.push(rowObj);
-        } else {
-          const nopolMatch = trimmed.match(/\b([A-Z]{1,2}\s*\d{1,4}\s*[A-Z]{1,3})\b/i);
-          const nokaMatch = trimmed.match(/\b([A-Z0-9]{12,17})\b/i);
-          const nosinMatch = trimmed.match(/\b([A-Z0-9]{8,15})\b/i);
-
-          if (nopolMatch || nokaMatch || nosinMatch) {
-            rows.push({
-              NOPOL: nopolMatch ? nopolMatch[1] : '',
-              NOKA: nokaMatch ? nokaMatch[1] : '',
-              NOSIN: nosinMatch ? nosinMatch[1] : '',
-              RAW_TEXT: trimmed
+            ['dragenter', 'dragover'].forEach(evt => {
+                dropZone.addEventListener(evt, (e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    dropZone.classList.add('dropzone-active');
+                });
             });
-          }
-        }
-      });
 
-      return rows;
-    }
+            ['dragleave', 'drop'].forEach(evt => {
+                dropZone.addEventListener(evt, (e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    dropZone.classList.remove('dropzone-active');
+                });
+            });
 
-    async function prosesFileImpor(e) {
-      const file = e.target.files[0];
-      if (!file) return;
+            dropZone.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) prosesImportFile(Array.from(files));
+            });
 
-      const fileName = file.name.toLowerCase();
-      showToast(`Membaca file ${file.name}...`, 'info');
-
-      try {
-        let rawObjects = [];
-
-        if (fileName.endsWith('.pdf')) {
-          rawObjects = await bacaFilePdf(file);
-        } else {
-          const buffer = await file.arrayBuffer();
-          const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
-          const firstSheet = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheet];
-          rawObjects = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+            fileInput.addEventListener('change', (e) => prosesImportFile(Array.from(e.target.files)));
         }
 
-        if (!rawObjects || rawObjects.length === 0) {
-          showToast('File Kosong atau format data tidak dapat dibaca', 'error');
-          return;
+        // Clean Search Key Function (queryClean: uppercase without spaces)
+        function makeQueryClean(str) {
+            if (!str) return '';
+            return String(str).replace(/\s+/g, '').toUpperCase();
         }
 
-        const mappedData = rawObjects.map(row => petakanKolomOtomatis(row)).filter(item => {
-          return item.NOPOL !== '-' || item.NOKA !== '-' || item.NOSIN !== '-' || item.NamaPemilik !== '-';
-        });
+        const delayAsync = (ms = 25) => new Promise(res => setTimeout(res, ms));
 
-        if (mappedData.length === 0) {
-          showToast('Tidak ada data kendaraan valid yang ditemukan dalam file', 'error');
-          return;
+        // 1-Click Demo Test with ALL 15 FIELDS
+        async function jalankanDemoFirestore1Click() {
+            logDiag("🚀 Menjalankan Tes Demo Firestore 15 Field Lengkap...", 'warn');
+            const demoData = [
+                { 
+                    "NO.PLAT": "BM 9569 TK", 
+                    "MEREK": "TOYOTA", 
+                    "TYPE": "HILUX 2.5 G", 
+                    "TAHUN": "2018", 
+                    "WARNA": "HITAM METALLIK", 
+                    "CYLINDER": "2494 CC", 
+                    "NAMA BBM": "SOLAR", 
+                    "NOKA": "MR0FR22G0C0619144", 
+                    "NOSIN": "2KDS092147", 
+                    "NO. BPKB": "L-12345678", 
+                    "NO. STNK": "9876543/STNK", 
+                    "NAMA": "HERMAN WIJAYA", 
+                    "NIK": "1471021508850003", 
+                    "MSSDN": "081266554433", 
+                    "PEKERJAAN": "WIRASWASTA",
+                    "ALAMAT": "JL. SUDIRMAN NO. 45 PEKANBARU"
+                },
+                { 
+                    "NO.PLAT": "B 1234 ABC", 
+                    "MEREK": "HONDA", 
+                    "TYPE": "VARIO 160 ABS", 
+                    "TAHUN": "2022", 
+                    "WARNA": "MERAH DOFF", 
+                    "CYLINDER": "157 CC", 
+                    "NAMA BBM": "PERTAMAX", 
+                    "NOKA": "MH1J2K34567891011", 
+                    "NOSIN": "J2K3E1234567", 
+                    "NO. BPKB": "K-88776655", 
+                    "NO. STNK": "1122334/STNK", 
+                    "NAMA": "BUDI SANTOSO", 
+                    "NIK": "3171012345670001", 
+                    "MSSDN": "081234567890", 
+                    "PEKERJAAN": "KARYAWAN SWASTA",
+                    "ALAMAT": "JL. GATOT SUBROTO JAKARTA"
+                }
+            ];
+            await eksekusiPengolahanDanUpload(demoData, [{ name: "Demo_Complete_15Fields.xlsx", size: 4500 }]);
         }
 
-        const { hasil, totalRaw, totalGanda } = prosesDeduplikasiData(mappedData);
+        // Main File Import Processing
+        async function prosesImportFile(files) {
+            if (!files || files.length === 0) return;
+            document.getElementById('btnSelectFile').disabled = true;
 
-        dataImporParsed = hasil;
+            try {
+                const fileListBox = document.getElementById('fileListBox');
+                const fileListContent = document.getElementById('fileListContent');
+                fileListBox.classList.remove('hidden');
+                fileListContent.innerHTML = files.map((f, i) => 
+                    `<div class="flex justify-between items-center pt-1 text-gray-300">
+                        <span>${i + 1}. 📄 <strong>${f.name}</strong></span>
+                        <span class="text-gray-400 font-mono">${(f.size/1024).toFixed(1)} KB</span>
+                    </div>`
+                ).join('');
 
-        document.getElementById('cntTotalRaw').textContent = totalRaw;
-        document.getElementById('cntGanda').textContent = totalGanda;
-        document.getElementById('cntHasil').textContent = hasil.length;
-        document.getElementById('txtJumlahBaris').textContent = `${hasil.length} Data Siap Impor`;
+                updateProgressUI(true, `Membaca ${files.length} file spreadsheet...`, 15);
+                setMsgStatus('', '');
 
-        const samplePreview = hasil.slice(0, 2).map((d, i) => {
-          const jsonStruktur = buatStrukturJsonLengkap(d);
-          return `[DATA ${i+1}] NOPOL: ${d.NOPOL} | NOKA: ${d.NOKA} | NOSIN: ${d.NOSIN}\n` +
-                 `PEMILIK: ${jsonStruktur.NamaPemilik || '-'} | MERK/TYPE: ${jsonStruktur.Merk || '-'}/${jsonStruktur.Type || '-'}\n` +
-                 `ALAMAT: ${jsonStruktur.Alamat || '-'} | WILAYAH/SERI: ${d.WILAYAH}/${d.SERI}\n` +
-                 `ASSET CODE: ${jsonStruktur.AssetCode || '-'}`;
-        }).join('\n\n');
+                const semuaDataRaw = [];
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    updateProgressUI(true, `Membaca (${i+1}/${files.length}): ${file.name}`, 20 + (i * 20));
+                    await delayAsync();
 
-        document.getElementById('previewDataText').textContent = samplePreview + (hasil.length > 2 ? `\n\n... +${hasil.length - 2} data lagi` : '');
-        document.getElementById('previewImporBox').classList.remove('hidden');
+                    try {
+                        let parsedRows = [];
+                        if (ext === 'xlsx' || ext === 'xls') {
+                            parsedRows = await fastReadXLSX(file);
+                        } else if (ext === 'csv') {
+                            parsedRows = await fastReadCSV(file);
+                        }
 
-        if (totalGanda > 0) {
-          showToast(`Deteksi ${totalGanda} data ganda! Data dengan informasi terbanyak & paling lengkap telah dipilih.`, 'warning');
-        } else {
-          showToast(`File dibaca: ${hasil.length} data valid siap diunggah`, 'success');
+                        if (parsedRows && parsedRows.length > 0) {
+                            semuaDataRaw.push(...parsedRows);
+                            logDiag(`✅ ${file.name}: Terbaca ${parsedRows.length} baris data.`, 'success');
+                        }
+                    } catch (err) {
+                        logDiag(`❌ Gagal membaca ${file.name}: ${err.message}`, 'err');
+                    }
+                }
+
+                if (semuaDataRaw.length === 0) {
+                    setMsgStatus("⚠️ Tidak ada data valid yang dapat dibaca dari file.", "warning");
+                    return;
+                }
+
+                await eksekusiPengolahanDanUpload(semuaDataRaw, files);
+
+            } catch (err) {
+                logDiag(`❌ Fatal Error: ${err.message}`, 'err');
+                setMsgStatus(`❌ Terjadi Kesalahan: ${err.message}`, 'error');
+            } finally {
+                updateProgressUI(false);
+                document.getElementById('btnSelectFile').disabled = false;
+                document.getElementById('fileInput').value = '';
+            }
         }
 
-      } catch(err) {
-        console.error("Gagal membaca file impor:", err);
-        showToast('Gagal membaca file! Pastikan format file sesuai.', 'error');
-      }
-    }
+        // Fast Excel Parsing
+        async function fastReadXLSX(file) {
+            const buf = await file.arrayBuffer();
+            const wb = XLSX.read(buf, { type: 'array', cellStyles: false, cellFormulas: false, cellDates: false });
+            let allRows = [];
+            for (const sheetName of wb.SheetNames) {
+                const ws = wb.Sheets[sheetName];
+                if (!ws) continue;
+                const rawMatrix = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                if (!rawMatrix || rawMatrix.length === 0) continue;
 
-    async function eksekusiImporFirestore() {
-      if (!dataImporParsed || dataImporParsed.length === 0) return;
+                let headerIdx = 0;
+                for (let r = 0; r < Math.min(rawMatrix.length, 15); r++) {
+                    const rowStr = (rawMatrix[r] || []).join(' ').toLowerCase();
+                    if (rowStr.includes('nopol') || rowStr.includes('plat') || rowStr.includes('rangka') || rowStr.includes('nama')) {
+                        headerIdx = r;
+                        break;
+                    }
+                }
 
-      const btn = document.getElementById('btnProsesImpor');
-      btn.disabled = true;
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mengunggah ke Firestore...`;
-
-      try {
-        let batch = db.batch();
-        let count = 0;
-        let promises = [];
-
-        for (let index = 0; index < dataImporParsed.length; index++) {
-          const item = dataImporParsed[index];
-          const docRef = db.collection('pencarian').doc();
-          batch.set(docRef, item);
-          count++;
-
-          if (count === 400 || index === dataImporParsed.length - 1) {
-            promises.push(batch.commit());
-            batch = db.batch();
-            count = 0;
-          }
+                const headers = (rawMatrix[headerIdx] || []).map(h => String(h).trim());
+                for (let r = headerIdx + 1; r < rawMatrix.length; r++) {
+                    const rData = rawMatrix[r];
+                    if (!rData || rData.every(c => String(c).trim() === '')) continue;
+                    const rowObj = {};
+                    headers.forEach((hVal, cIdx) => {
+                        if (hVal) rowObj[hVal] = rData[cIdx] !== undefined ? String(rData[cIdx]).trim() : '';
+                    });
+                    allRows.push(rowObj);
+                }
+            }
+            return allRows;
         }
 
-        await Promise.all(promises);
+        function fastReadCSV(file) {
+            return new Promise((resolve) => {
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (res) => resolve(res.data || []),
+                    error: () => resolve([])
+                });
+            });
+        }
 
-        catatAktivitas('IMPOR_MASSAL', `Berhasil Impor Massal ${dataImporParsed.length} Data Terlengkap`, 'success');
-        showToast(`Berhasil Mengunggah ${dataImporParsed.length} Data ke Database!`, 'success');
+        // CORE ENGINE: Process Data & Build All 15 Fields with Multi-Alias Payload
+        async function eksekusiPengolahanDanUpload(semuaDataRaw, files) {
+            const startTime = performance.now();
+            updateProgressUI(true, `Membangun dokumen Firestore Multi-Field 15 Variabel...`, 50);
+            await delayAsync();
 
-        document.getElementById('previewImporBox').classList.add('hidden');
-        dataImporParsed = [];
-        tutupModalImpor();
-      } catch(err) {
-        console.error("Error eksekusi impor:", err);
-        showToast('Gagal mengunggah beberapa data ke Firebase', 'error');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-database"></i> UNGGAH DATA TERPILIH KE FIRESTORE`;
-      }
-    }
+            const processedVehicles = [];
 
-    function catatAktivitas(kategori, deskripsi, tipe = 'info') {
-      const logBaru = {
-        id: 'log_' + Date.now(),
-        waktu: new Date().toISOString(),
-        kategori: kategori,
-        deskripsi: deskripsi,
-        tipe: tipe
-      };
-      let logs = JSON.parse(localStorage.getItem('audit_logs') || '[]');
-      logs.unshift(logBaru);
-      if (logs.length > 300) logs = logs.slice(0, 300);
-      localStorage.setItem('audit_logs', JSON.stringify(logs));
-      perbaruiTampilanAuditLog();
-    }
+            semuaDataRaw.forEach((row, idx) => {
+                let nopol = "", merk = "", tipe = "", tahun = "", warna = "", cylinder = "", bbm = "";
+                let noka = "", nosin = "", bpkb = "", stnk = "";
+                let nama = "", nik = "", mssdn = "", pekerjaan = "", alamat = "";
 
-    function bukaModalAuditLog() {
-      document.getElementById('modalAuditLog').classList.remove('hidden');
-      perbaruiTampilanAuditLog();
-    }
+                // Extract values from Excel/CSV headers flexibly
+                for (let [k, v] of Object.entries(row)) {
+                    if (v === undefined || v === null) continue;
+                    const val = String(v).trim().toUpperCase();
+                    const keyClean = String(k).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    function tutupModalAuditLog() {
-      document.getElementById('modalAuditLog').classList.add('hidden');
-    }
+                    // Nopol / Plat
+                    if (keyClean.includes('nopol') || keyClean.includes('polisi') || keyClean.includes('plat')) nopol = val;
+                    // Merek
+                    else if (keyClean.includes('merek') || keyClean.includes('merk')) merk = val;
+                    // Type / Tipe / Jenis
+                    else if (keyClean.includes('type') || keyClean.includes('tipe') || keyClean.includes('jenis') || keyClean.includes('model')) tipe = val;
+                    // Tahun
+                    else if (keyClean.includes('tahun') || keyClean.includes('thn')) tahun = val;
+                    // Warna
+                    else if (keyClean.includes('warna')) warna = val;
+                    // Cylinder / CC / Silinder
+                    else if (keyClean.includes('cylinder') || keyClean.includes('cc') || keyClean.includes('silinder')) cylinder = val;
+                    // BBM / Bahan Bakar
+                    else if (keyClean.includes('bbm') || keyClean.includes('bahan')) bbm = val;
+                    // Noka / Rangka / VIN
+                    else if (keyClean.includes('noka') || keyClean.includes('rangka') || keyClean === 'vin') noka = val;
+                    // Nosin / Mesin / Engine
+                    else if (keyClean.includes('nosin') || keyClean.includes('mesin') || keyClean === 'engine') nosin = val;
+                    // BPKB
+                    else if (keyClean.includes('bpkb')) bpkb = val;
+                    // STNK
+                    else if (keyClean.includes('stnk')) stnk = val;
+                    // Nama
+                    else if (keyClean.includes('nama') || keyClean.includes('pemilik')) nama = val;
+                    // NIK / KTP / Identitas
+                    else if (keyClean.includes('nik') || keyClean.includes('ktp') || keyClean.includes('identitas')) nik = val;
+                    // MSSDN / HP / Telepon
+                    else if (keyClean.includes('mssdn') || keyClean.includes('hp') || keyClean.includes('telepon') || keyClean.includes('wa')) mssdn = val;
+                    // Pekerjaan / Job
+                    else if (keyClean.includes('pekerjaan') || keyClean.includes('job')) pekerjaan = val;
+                    // Alamat
+                    else if (keyClean.includes('alamat')) alamat = val;
+                }
 
-    function hapusRiwayatLog() {
-      localStorage.removeItem('audit_logs');
-      perbaruiTampilanAuditLog();
-      showToast('Riwayat Log Berhasil Dibersihkan', 'info');
-    }
+                if (!nopol && noka) nopol = noka;
+                if (!nopol) nopol = `KENDARAAN_${idx + 1}`;
 
-    function perbaruiTampilanAuditLog() {
-      const logs = JSON.parse(localStorage.getItem('audit_logs') || '[]');
-      const container = document.getElementById('listAuditLog');
-      const countEl = document.getElementById('cntAuditLog');
-      
-      if (countEl) countEl.textContent = logs.length;
-      if (!container) return;
+                // Cleaned Search Keys
+                const qNopol = makeQueryClean(nopol);
+                const qNoka = makeQueryClean(noka);
+                const qNosin = makeQueryClean(nosin);
 
-      if (logs.length === 0) {
-        container.innerHTML = `<div class="text-slate-500 text-center py-8">Belum ada catatan riwayat aktivitas.</div>`;
-        return;
-      }
+                // COMPLETE PAYLOAD CONTAINING ALL 15 FIELDS AND ALL ALIASES MATCHING SCREENSHOTS EXACTLY
+                const firestoreDocData = {
+                    // 1. NO.PLAT / Nopol
+                    "NO.PLAT": nopol, "NO PLAT": nopol, "nopol": nopol, "Nopol": nopol, "no_polisi": nopol, "NopolServer": nopol, "NO_POLISI": nopol, "plat": nopol, "plat_nomor": nopol,
+                    
+                    // 2. MEREK
+                    "MEREK": merk, "merek": merk, "merk": merk, "Merk": merk,
 
-      container.innerHTML = logs.map(log => {
-        let badgeColor = 'bg-slate-800 text-slate-300';
-        if (log.tipe === 'success') badgeColor = 'bg-emerald-950 text-emerald-400 border border-emerald-800';
-        else if (log.tipe === 'danger') badgeColor = 'bg-red-950 text-red-400 border border-red-800';
-        else if (log.tipe === 'warning') badgeColor = 'bg-amber-950 text-amber-400 border border-amber-800';
+                    // 3. TYPE
+                    "TYPE": tipe, "type": tipe, "Type": tipe, "tipe": tipe, "Tipe": tipe, "TIPE": tipe, "jenis": tipe, "Jenis": tipe,
 
-        const d = new Date(log.waktu);
-        const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')} - ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+                    // 4. TAHUN
+                    "TAHUN": tahun, "tahun": tahun, "Tahun": tahun, "thn": tahun, "tahun_buat": tahun,
 
-        return `
-          <div class="p-2.5 bg-black border border-slate-800 rounded-xl space-y-1">
-            <div class="flex items-center justify-between text-[10px]">
-              <span class="px-2 py-0.5 rounded-md font-bold uppercase ${badgeColor}">${log.kategori}</span>
-              <span class="text-slate-500">${timeStr}</span>
-            </div>
-            <div class="text-xs text-slate-200 font-sans">${log.deskripsi}</div>
-          </div>
-        `;
-      }).join('');
-    }
+                    // 5. WARNA
+                    "WARNA": warna, "warna": warna, "Warna": warna,
 
-    function bukaModalWatchlist() { 
-      document.getElementById('modalWatchlist').classList.remove('hidden'); 
-      perbaruiTampilanWatchlist();
-    }
+                    // 6. CYLINDER
+                    "CYLINDER": cylinder, "cylinder": cylinder, "Cylinder": cylinder, "cc": cylinder, "CC": cylinder, "silinder": cylinder,
 
-    function tutupModalWatchlist() { document.getElementById('modalWatchlist').classList.add('hidden'); }
+                    // 7. NAMA BBM
+                    "NAMA BBM": bbm, "nama_bbm": bbm, "bbm": bbm, "BBM": bbm, "bahan_bakar": bbm, "BahanBakar": bbm,
 
-    function tambahWatchlist() {
-      const input = document.getElementById('inWatchlistNopol');
-      const val = input.value.trim().toUpperCase();
-      if (!val) return;
-      if (!watchlistNopol.includes(val)) {
-        watchlistNopol.push(val);
-        localStorage.setItem('watchlist_nopol', JSON.stringify(watchlistNopol));
-        input.value = '';
-        perbaruiTampilanWatchlist();
-        catatAktivitas('WATCHLIST', `Target Baru Ditambahkan: ${val}`, 'warning');
-        showToast(`Target ${val} ditambahkan ke Watchlist`, 'success');
-        tampil();
-      }
-    }
+                    // 8. NOKA
+                    "NOKA": noka, "noka": noka, "nomorRangka": noka, "no_rangka": noka, "NoRangka": noka, "vin": noka, "no_frame": noka, "NO_RANGKA": noka,
 
-    function hapusWatchlist(target) {
-      watchlistNopol = watchlistNopol.filter(w => w !== target);
-      localStorage.setItem('watchlist_nopol', JSON.stringify(watchlistNopol));
-      perbaruiTampilanWatchlist();
-      catatAktivitas('WATCHLIST', `Target Dihapus: ${target}`, 'info');
-      showToast(`Target ${target} dihapus`, 'info');
-      tampil();
-    }
+                    // 9. NOSIN
+                    "NOSIN": nosin, "nosin": nosin, "nomorMesin": nosin, "no_mesin": nosin, "NoMesin": nosin, "no_engine": nosin, "NO_MESIN": nosin,
 
-    function perbaruiTampilanWatchlist() {
-      const container = document.getElementById('listWatchlist');
-      const badge = document.getElementById('badgeWatchlist');
-      if (badge) {
-        if (watchlistNopol.length > 0) badge.classList.remove('hidden');
-        else badge.classList.add('hidden');
-      }
+                    // 10. NO. BPKB
+                    "NO. BPKB": bpkb, "NO_BPKB": bpkb, "NO BPKB": bpkb, "no_bpkb": bpkb, "bpkb": bpkb, "BPKB": bpkb, "NoBPKB": bpkb,
 
-      if (!container) return;
-      if (watchlistNopol.length === 0) {
-        container.innerHTML = `<div class="text-slate-500 text-center py-4">Belum ada target dalam watchlist</div>`;
-        return;
-      }
+                    // 11. NO. STNK
+                    "NO. STNK": stnk, "NO_STNK": stnk, "NO STNK": stnk, "no_stnk": stnk, "stnk": stnk, "STNK": stnk, "NoSTNK": stnk,
 
-      container.innerHTML = watchlistNopol.map(w => `
-        <div class="flex items-center justify-between p-2 bg-black border border-slate-800 rounded-lg">
-          <span class="text-red-400 font-bold">${w}</span>
-          <button onclick="hapusWatchlist('${w}')" class="text-slate-400 hover:text-red-500 px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>
-        </div>
-      `).join('');
-    }
+                    // 12. NAMA
+                    "NAMA": nama, "nama": nama, "namaPemilik": nama, "NamaPemilik": nama, "nama_pemilik": nama, "Nama": nama,
 
-    function buatPesanWa(d) {
-      const plat = ambilPlat(d);
-      const noka = ambilNoka(d);
-      const nosin = ambilNosin(d);
-      const wilayah = ambilWilayah(d);
-      const lokasiGps = ambilLokasiGps(d);
-      const mapsUrl = ambilMapsUrl(d);
-      const waktu = d.waktu_ditemukan ? formatWaktu(d.waktu_ditemukan).replace(/<[^>]*>/g, '') : "-";
-      
-      let teksLokasi = wilayah;
-      if (lokasiGps !== '-') teksLokasi += ` (${lokasiGps})`;
-      if (mapsUrl !== '-') teksLokasi += `\n🗺️ PETA    : ${mapsUrl}`;
+                    // 13. NIK
+                    "NIK": nik, "nik": nik, "ktp": nik, "NoKTP": nik, "no_ktp": nik, "identitas": nik, "no_identitas": nik,
 
-      const jsonStruktur = buatStrukturJsonLengkap(d);
-      const jsonStr = JSON.stringify(jsonStruktur, null, 2);
-      
-      return `PUSAT KONTROL DATABASE IP
-━━━━━━━━━━━━━━━━━━━
-🚗 NOPOL    : ${plat}
-📍 WILAYAH : ${teksLokasi}
-🔶 NOKA     : ${noka}
-🔷 NOSIN    : ${nosin}
-🕐 WAKTU    : ${waktu}
-━━━━━━━━━━━━━━━━━━━
-DATA JSON LENGKAP:
-\`\`\`json
-${jsonStr}
-\`\`\`
-Terima kasih.`;
-    }
+                    // 14. MSSDN
+                    "MSSDN": mssdn, "mssdn": mssdn, "no_hp": mssdn, "NoHP": mssdn, "nomor_hp": mssdn, "telepon": mssdn, "hp": mssdn,
 
-    function kirimWaDariModal() {
-      if (!docIdTerpilih) return;
-      const doc = semuaData.find(d => d.id === docIdTerpilih);
-      if (!doc) return;
-      const d = typeof doc.data === 'function' ? doc.data() : doc.data;
-      const pesan = buatPesanWa(d);
-      catatAktivitas('BAGIKAN_WA', `Membagikan Laporan WA Plat: ${ambilPlat(d)}`, 'info');
-      const url = `https://wa.me/?text=${encodeURIComponent(pesan)}`;
-      window.open(url, '_blank');
-    }
+                    // 15. PEKERJAAN
+                    "PEKERJAAN": pekerjaan, "pekerjaan": pekerjaan, "Pekerjaan": pekerjaan, "job": pekerjaan, "JOB": pekerjaan,
 
-    cekSesiOtomatis();
-  </script>
+                    // Extra Details
+                    "ALAMAT": alamat, "alamat": alamat, "Alamat": alamat,
+                    qNopol: qNopol, qNoka: qNoka, qNosin: qNosin,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                processedVehicles.push({
+                    qNopol: qNopol,
+                    qNoka: qNoka,
+                    qNosin: qNosin,
+                    docData: firestoreDocData,
+                    raw: row
+                });
+            });
+
+            globalProcessedData = processedVehicles;
+            tampilkanTablePreview(processedVehicles);
+
+            // 1. SAVE TO CLOUD FIRESTORE (`db.collection('pencarian')`)
+            let totalFirestoreDocsWritten = 0;
+            let firestoreErrorMsg = '';
+
+            if (dbFirestore && processedVehicles.length > 0) {
+                updateProgressUI(true, `Mengunggah data ke Firestore collection('pencarian')...`, 65);
+                logDiag(`🔥 Memulai Firestore Batch Write ke collection('pencarian')...`, 'info');
+
+                try {
+                    // Create document mapping for Nopol, Noka, & Nosin
+                    const firestoreDocMap = new Map();
+
+                    processedVehicles.forEach(item => {
+                        if (item.qNopol) firestoreDocMap.set(item.qNopol, item.docData);
+                        if (item.qNoka) firestoreDocMap.set(item.qNoka, item.docData);
+                        if (item.qNosin) firestoreDocMap.set(item.qNosin, item.docData);
+                    });
+
+                    const docEntries = Array.from(firestoreDocMap.entries());
+                    totalFirestoreDocsWritten = docEntries.length;
+
+                    logDiag(`Total Dokumen Firestore yang akan dibuat/diperbarui: ${totalFirestoreDocsWritten} dokumen`, 'info');
+
+                    // Firestore Batch Write (Max 400 items per batch)
+                    const batchSize = 400;
+                    const totalBatches = Math.ceil(docEntries.length / batchSize);
+
+                    for (let b = 0; b < totalBatches; b++) {
+                        const batch = dbFirestore.batch();
+                        const currentChunk = docEntries.slice(b * batchSize, (b + 1) * batchSize);
+
+                        currentChunk.forEach(([docId, docPayload]) => {
+                            const docRef = dbFirestore.collection('pencarian').doc(docId);
+                            batch.set(docRef, docPayload, { merge: true });
+                        });
+
+                        const pct = 65 + Math.round(((b + 1) / totalBatches) * 25);
+                        updateProgressUI(true, `Menyimpan Firestore Batch (${b+1}/${totalBatches})...`, pct);
+
+                        await batch.commit();
+                        logDiag(`✅ Firestore Batch ${b+1}/${totalBatches} Commit Sukses!`, 'success');
+                        await delayAsync();
+                    }
+
+                } catch (fErr) {
+                    firestoreErrorMsg = fErr.message || String(fErr);
+                    logDiag(`❌ Firestore Upload Error: ${firestoreErrorMsg}`, 'err');
+                }
+            }
+
+            // 2. SAVE TO REALTIME DATABASE (`data_kendaraan`) IF CHECKED
+            if (dbRealtime && document.getElementById('chkSyncRealtime').checked && processedVehicles.length > 0) {
+                updateProgressUI(true, `Menyinkronkan ke Realtime Database 'data_kendaraan'...`, 92);
+                try {
+                    const rtdbBatch = {};
+                    processedVehicles.forEach(item => {
+                        if (item.qNopol) rtdbBatch[item.qNopol] = item.docData;
+                    });
+                    await dbRealtime.ref('data_kendaraan').update(rtdbBatch);
+                    logDiag(`⚡ Realtime Database Synchronized!`, 'success');
+                } catch (rErr) {
+                    logDiag(`⚠️ Realtime DB Notice: ${rErr.message}`, 'warn');
+                }
+            }
+
+            const totalTimeSec = ((performance.now() - startTime) / 1000).toFixed(2);
+
+            if (totalFirestoreDocsWritten > 0 && !firestoreErrorMsg) {
+                setMsgStatus(`✅ <strong>SUKSES BESAR!</strong> ${totalFirestoreDocsWritten} Dokumen berhasil dibuat di Cloud Firestore <code class="bg-[#0d1117] px-1 py-0.5 rounded text-amber-300">collection('pencarian')</code> (${totalTimeSec}s).<br>🎉 <strong>GARANSI:</strong> Seluruh 15 Field (NO.PLAT, MEREK, TYPE, TAHUN, WARNA, CYLINDER, NAMA BBM, NOKA, NOSIN, BPKB, STNK, NAMA, NIK, MSSDN, PEKERJAAN) sekarang LENGKAP & TAMPIL di aplikasi lain!`, 'sukses');
+                showToast("🔥 Sukses Disimpan ke Firestore 'pencarian'!");
+            } else if (firestoreErrorMsg) {
+                setMsgStatus(`❌ Gagal menyimpan ke Firestore 'pencarian': ${firestoreErrorMsg}`, 'error');
+            } else {
+                setMsgStatus(`✅ ${processedVehicles.length} Kendaraan diproses (${totalTimeSec}s).`, 'sukses');
+            }
+
+            tampilkanSummaryStats(files ? files.length : 1, processedVehicles.length, totalFirestoreDocsWritten);
+            cekTotalDatabaseCloud();
+        }
+
+        // Table Render & Search
+        function tampilkanTablePreview(dataArray) {
+            const card = document.getElementById('tablePreviewCard');
+            document.getElementById('txtTableRecordCount').textContent = dataArray.length;
+
+            if (!dataArray || dataArray.length === 0) {
+                card.classList.add('hidden');
+                return;
+            }
+
+            globalFilteredTableData = dataArray;
+            currentTablePage = 1;
+            renderTableRows();
+            card.classList.remove('hidden');
+        }
+
+        function renderTableRows() {
+            const tbody = document.getElementById('previewTableBody');
+            const start = (currentTablePage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const pageData = globalFilteredTableData.slice(start, end);
+            const totalPages = Math.ceil(globalFilteredTableData.length / rowsPerPage) || 1;
+
+            tbody.innerHTML = pageData.map((d, i) => {
+                const doc = d.docData;
+                return `
+                <tr class="hover:bg-[#1c2128]">
+                    <td class="p-2.5 font-mono text-gray-500">${start + i + 1}</td>
+                    <td class="p-2.5 font-bold text-red-400 font-mono">${doc["NO.PLAT"] || '-'}</td>
+                    <td class="p-2.5 font-semibold text-white">${doc["MEREK"] || '-'}</td>
+                    <td class="p-2.5 text-gray-200">${doc["TYPE"] || '-'}</td>
+                    <td class="p-2.5 text-gray-300">${doc["TAHUN"] || '-'}</td>
+                    <td class="p-2.5 text-gray-300">${doc["WARNA"] || '-'}</td>
+                    <td class="p-2.5 text-gray-300">${doc["CYLINDER"] || '-'}</td>
+                    <td class="p-2.5 text-gray-300">${doc["NAMA BBM"] || '-'}</td>
+                    <td class="p-2.5 font-mono text-gray-300">${doc["NOKA"] || '-'}</td>
+                    <td class="p-2.5 font-mono text-gray-300">${doc["NOSIN"] || '-'}</td>
+                    <td class="p-2.5 font-mono text-amber-300">${doc["NO. BPKB"] || '-'}</td>
+                    <td class="p-2.5 font-mono text-amber-300">${doc["NO. STNK"] || '-'}</td>
+                    <td class="p-2.5 font-semibold text-emerald-300">${doc["NAMA"] || '-'}</td>
+                    <td class="p-2.5 font-mono text-gray-300">${doc["NIK"] || '-'}</td>
+                    <td class="p-2.5 font-mono text-gray-400">${doc["MSSDN"] || '-'}</td>
+                    <td class="p-2.5 text-gray-300">${doc["PEKERJAAN"] || '-'}</td>
+                </tr>
+            `}).join('');
+
+            document.getElementById('txtPageIndicator').textContent = `Halaman ${currentTablePage} dari ${totalPages}`;
+            document.getElementById('btnPagePrev').disabled = currentTablePage === 1;
+            document.getElementById('btnPageNext').disabled = currentTablePage >= totalPages;
+        }
+
+        function gantiHalamanTable(delta) {
+            currentTablePage += delta;
+            renderTableRows();
+        }
+
+        function cariTableData() {
+            const query = document.getElementById('inputTableSearch').value.toLowerCase();
+            globalFilteredTableData = globalProcessedData.filter(item => {
+                const doc = item.docData;
+                return Object.values(doc).some(val => String(val).toLowerCase().includes(query));
+            });
+            currentTablePage = 1;
+            renderTableRows();
+        }
+
+        // Helper UI Routines
+        function updateProgressUI(active, text = '', progress = 0) {
+            const card = document.getElementById('progressCard');
+            if (active) card.classList.remove('hidden'); else card.classList.add('hidden');
+            if (text) document.getElementById('loadingStatusText').textContent = text;
+            if (progress) document.getElementById('progressBarFill').style.width = `${progress}%`;
+        }
+
+        function setMsgStatus(msg, type) {
+            const box = document.getElementById('statusMsgBox');
+            box.innerHTML = msg;
+            box.className = 'p-4 rounded-xl text-xs font-medium leading-relaxed shadow-lg ';
+            
+            if (type === 'sukses') {
+                box.className += 'bg-emerald-950/80 border border-emerald-500/40 text-emerald-300';
+            } else if (type === 'warning') {
+                box.className += 'bg-amber-950/80 border border-amber-500/40 text-amber-300';
+            } else if (type === 'error') {
+                box.className += 'bg-red-950/80 border border-red-500/40 text-red-300';
+            } else {
+                box.classList.add('hidden');
+                return;
+            }
+            box.classList.remove('hidden');
+        }
+
+        function tampilkanSummaryStats(fileCount, recordCount, firestoreDocs) {
+            document.getElementById('statFiles').textContent = fileCount;
+            document.getElementById('statRecords').textContent = recordCount;
+            document.getElementById('statFirestoreDocs').textContent = firestoreDocs;
+            document.getElementById('statsCard').classList.remove('hidden');
+        }
+
+        function unduhJSON() {
+            if (!globalProcessedData || globalProcessedData.length === 0) return;
+            const jsonList = globalProcessedData.map(d => d.docData);
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonList, null, 2));
+            const a = document.createElement('a');
+            a.setAttribute("href", dataStr);
+            a.setAttribute("download", `firestore_pencarian_15fields_${Date.now()}.json`);
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        function salinJSON() {
+            if (!globalProcessedData || globalProcessedData.length === 0) return;
+            const jsonList = globalProcessedData.map(d => d.docData);
+            const text = JSON.stringify(jsonList, null, 2);
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast("📋 JSON 15 Field disalin ke clipboard!");
+            } catch(e){}
+            document.body.removeChild(textarea);
+        }
+
+        async function cekTotalDatabaseCloud() {
+            const headerBadge = document.getElementById('headerFirestoreCount');
+
+            if (!dbFirestore) return;
+
+            try {
+                const snap = await dbFirestore.collection('pencarian').limit(1).get();
+                if (!snap.empty) {
+                    if (headerBadge) headerBadge.textContent = "Firestore Konek";
+                    logDiag("🔥 Cloud Firestore collection('pencarian') Aktif & Terhubung!", 'success');
+                } else {
+                    if (headerBadge) headerBadge.textContent = "Koleksi Kosong";
+                }
+            } catch (err) {
+                logDiag("Firestore Check Error: " + err.message, 'warn');
+                if (headerBadge) headerBadge.textContent = "Cek Rules";
+            }
+        }
+    </script>
 </body>
 </html>
